@@ -1,8 +1,10 @@
 # 方块工坊 · Schem Teacher
 
-**把 Minecraft 图纸变成可以编排、跟建、打印和带走的离线教学网页。**
+**把 Minecraft `.schem` 图纸变成可编辑的 3D 分步建造教程，一键导出离线 HTML。**
 
 [在线使用](https://zhan27.github.io/schem-teacher/) · [源码](https://github.com/Zhan27/schem-teacher) · [使用说明](docs/guide.md)
+
+面向亲子共建与课堂教学，提供原版材质、材料统计、分区编排、建造进度和中文 / English 切换。无需安装游戏、模组或服务器，导入支持的图纸即可在浏览器跟建。
 
 导入 `.schem` → 确认地面与朝向 → 调整建筑分区 → 逐段/逐组施工 → 导出离线 HTML。
 
