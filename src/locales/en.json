@@ -54,6 +54,7 @@
   "内置原版材质 · Java {version}": "Built-in vanilla resources · Java {version}",
   "自定义材质 · 原版资源补齐": "Custom resources · vanilla base included",
   "{n}种方块使用示意模型": "{n} block types use illustrative models",
+  "{n}种状态缺失，按模组默认值显示": "{n} incomplete states shown with mod defaults",
   "自定义材质已载入，缺失资源由内置原版补齐。": "Custom resources loaded; missing resources use the built-in vanilla base.",
   "已恢复内置原版材质。": "Built-in vanilla resources restored.",
   "上组": "Previous group",

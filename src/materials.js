@@ -1,4 +1,5 @@
 import { decode } from './planner.js';
+import { entityModel } from './entity-models.js';
 const normals = {
   up: [0, 1, 0],
   down: [0, -1, 0],
@@ -155,7 +156,7 @@ export function defaultMaterials(model) {
         props.type === 'double',
     };
   }
-  return { textures, models, authentic: false, missing: [] };
+  return { textures, models, authentic: false, missing: [], assumptions: [] };
 }
 export async function importMaterials(model, files) {
   const result = defaultMaterials(model),
@@ -192,11 +193,22 @@ export async function importMaterials(model, files) {
     const blob = new Blob([raw], { type: 'image/png' }),
       image = await createImageBitmap(blob);
     const c = document.createElement('canvas');
-    c.width = c.height = 16;
+    c.width = Math.min(256, image.width);
+    c.height = id.includes(':entity/') ? Math.min(256, image.height) : c.width;
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
-    g.drawImage(image, 0, 0, image.width, image.width, 0, 0, 16, 16);
-    result.textures.set(id, g.getImageData(0, 0, 16, 16));
+    g.drawImage(
+      image,
+      0,
+      0,
+      image.width,
+      id.includes(':entity/') ? image.height : image.width,
+      0,
+      0,
+      c.width,
+      c.height,
+    );
+    result.textures.set(id, g.getImageData(0, 0, c.width, c.height));
     image.close();
     imageCache.set(id, true);
   }
@@ -207,9 +219,31 @@ export async function importMaterials(model, files) {
     return Object.entries(when).every(([k, v]) => String(v).split('|').includes(props[k]));
   }
   for (const [pid, state] of Object.entries(model.palette)) {
-    const { id, props } = decode(state);
+    const { id, props: sourceProps } = decode(state);
+    // These files omit all properties for the three mod blocks. Keep their
+    // original states intact; show the upstream mod's documented default only.
+    const defaults = {
+      'farmersdelight:stove': { facing: 'north', lit: 'false' },
+      'farmersdelight:cutting_board': { facing: 'north', waterlogged: 'false' },
+      'farmersdelight:cooking_pot': { facing: 'north', support: 'none', waterlogged: 'false' },
+    }[id];
+    const props = { ...defaults, ...sourceProps };
+    const assumed =
+      defaults &&
+      Object.fromEntries(Object.entries(defaults).filter(([key]) => sourceProps[key] === undefined));
+    if (assumed && Object.keys(assumed).length) result.assumptions.push({ id, properties: assumed });
     if (id.endsWith(':air')) continue;
     try {
+      const entity = await entityModel(id, props, {
+        cubeFaces,
+        rotate,
+        loadTexture,
+        textures: result.textures,
+      });
+      if (entity) {
+        result.models[pid] = entity;
+        continue;
+      }
       const bs = json(path(id === 'minecraft:iron_chain' ? 'minecraft:chain' : id, 'blockstates')),
         selected = [];
       if (bs.variants) {
@@ -302,9 +336,11 @@ export function packMaterials(materials) {
     missing: materials.missing,
     source: materials.source || 'custom',
     version: materials.version || null,
+    assumptions: materials.assumptions || [],
     textures: [...materials.textures].map(([id, raw]) => {
       const c = document.createElement('canvas');
-      c.width = c.height = 16;
+      c.width = raw.width;
+      c.height = raw.height;
       c.getContext('2d').putImageData(raw, 0, 0);
       return [id, c.toDataURL()];
     }),
@@ -318,9 +354,10 @@ export async function unpackMaterials(data) {
     image.src = url;
     await image.decode();
     const c = document.createElement('canvas');
-    c.width = c.height = 16;
-    c.getContext('2d').drawImage(image, 0, 0, 16, 16);
-    textures.set(id, c.getContext('2d').getImageData(0, 0, 16, 16));
+    c.width = Math.min(256, image.width);
+    c.height = Math.min(256, image.height);
+    c.getContext('2d').drawImage(image, 0, 0, c.width, c.height);
+    textures.set(id, c.getContext('2d').getImageData(0, 0, c.width, c.height));
   }
   return {
     models: data.models,
@@ -329,5 +366,6 @@ export async function unpackMaterials(data) {
     missing: data.missing || [],
     source: data.source === 'vanilla' ? 'vanilla' : 'custom',
     version: data.version || null,
+    assumptions: data.assumptions || [],
   };
 }

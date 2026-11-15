@@ -78,22 +78,29 @@ export class BlueprintRenderer {
   makeAtlas() {
     if (this.atlas) return;
     const atlas = document.createElement('canvas');
+    const tileSize = Math.max(
+        16,
+        ...[...this.source.textures.values()].map((raw) => Math.max(raw.width, raw.height)),
+      ),
+      stride = tileSize + 4;
     this.tileCols = Math.ceil(Math.sqrt(this.source.textures.size));
-    this.atlasSize = 2 ** Math.ceil(Math.log2(Math.max(256, this.tileCols * 20 + 4)));
+    this.atlasSize = 2 ** Math.ceil(Math.log2(Math.max(256, this.tileCols * stride + 4)));
     atlas.width = atlas.height = this.atlasSize;
     const g = atlas.getContext('2d');
     g.imageSmoothingEnabled = false;
     this.tiles = new Map();
     let i = 0;
     for (const [id, raw] of this.source.textures) {
-      const x = (i % this.tileCols) * 20 + 2,
-        y = Math.floor(i / this.tileCols) * 20 + 2;
+      const x = (i % this.tileCols) * stride + 2,
+        y = Math.floor(i / this.tileCols) * stride + 2,
+        w = raw.width,
+        h = raw.height;
       g.putImageData(raw, x, y);
-      g.drawImage(atlas, x, y, 1, 16, x - 2, y, 2, 16);
-      g.drawImage(atlas, x + 15, y, 1, 16, x + 16, y, 2, 16);
-      g.drawImage(atlas, x - 2, y, 20, 1, x - 2, y - 2, 20, 2);
-      g.drawImage(atlas, x - 2, y + 15, 20, 1, x - 2, y + 16, 20, 2);
-      this.tiles.set(id, [x, y]);
+      g.drawImage(atlas, x, y, 1, h, x - 2, y, 2, h);
+      g.drawImage(atlas, x + w - 1, y, 1, h, x + w, y, 2, h);
+      g.drawImage(atlas, x - 2, y, w + 4, 1, x - 2, y - 2, w + 4, 2);
+      g.drawImage(atlas, x - 2, y + h - 1, w + 4, 1, x - 2, y + h, w + 4, 2);
+      this.tiles.set(id, [x, y, w, h]);
       i++;
     }
     this.atlasPixels = g.getImageData(0, 0, this.atlasSize, this.atlasSize);
@@ -121,7 +128,7 @@ export class BlueprintRenderer {
     this.referenceCount = 0;
     this.targetCount = 0;
     const all = new Map(blocks.map((b) => [b.slice(0, 3).join(','), b])),
-      buckets = [0, 1, 2, 3].map(() => ({ p: [], uv: [], c: [], ids: [] }));
+      buckets = [0, 1, 2, 3].map(() => ({ p: [], uv: [], c: [], ids: [], centers: [] }));
     let quads = 0;
     const layerFor = (b) =>
       opts.newKeys?.has(b.slice(0, 3).join(','))
@@ -152,17 +159,21 @@ export class BlueprintRenderer {
         rgb = rgb.map((c, i) =>
           Math.min(1, c * shade * (fresh ? 1.03 : 1) + (fresh ? [0.04, 0.025, 0][i] : 0)),
         );
-        for (const vi of [0, 1, 2, 0, 2, 3]) {
+        // Source quads are clockwise viewed from their outward normal.
+        for (const vi of [0, 2, 1, 0, 3, 2]) {
           const v = verts[vi],
             u = uv[vi];
           bucket.p.push(v[0] + b[0], v[1] + b[1], v[2] + b[2]);
           bucket.uv.push(
-            tile ? (tile[0] + Math.max(0.01, Math.min(15.99, u[0]))) / this.atlasSize : 0,
-            tile ? 1 - (tile[1] + Math.max(0.01, Math.min(15.99, u[1]))) / this.atlasSize : 0,
+            tile ? (tile[0] + (Math.max(0.01, Math.min(15.99, u[0])) * tile[2]) / 16) / this.atlasSize : 0,
+            tile
+              ? 1 - (tile[1] + (Math.max(0.01, Math.min(15.99, u[1])) * tile[3]) / 16) / this.atlasSize
+              : 0,
           );
           bucket.c.push(...rgb);
         }
         bucket.ids.push(b, b);
+        bucket.centers.push(verts[0].map((_, i) => b[i] + verts.reduce((s, v) => s + v[i], 0) / 4));
         quads++;
       }
     }
@@ -176,8 +187,8 @@ export class BlueprintRenderer {
       const material = new THREE.MeshBasicMaterial({
         map: this.atlas,
         vertexColors: true,
-        side: THREE.DoubleSide,
-        transparent: true,
+        side: THREE.FrontSide,
+        transparent: i !== 0,
         opacity: i === 1 ? (opts.targetOpacity ?? 1) : i >= 2 ? 0.62 : 1,
         alphaTest: 0.12,
         depthWrite: i < 2 && (i !== 1 || (opts.targetOpacity ?? 1) === 1),
@@ -186,7 +197,12 @@ export class BlueprintRenderer {
         polygonOffsetUnits: 1,
       });
       const mesh = new THREE.Mesh(geo, material);
-      mesh.userData.cells = data.ids;
+      mesh.userData.cells = [...data.ids];
+      mesh.userData.baseCells = data.ids;
+      mesh.userData.centers = data.centers;
+      mesh.userData.faceOrder = data.centers.map((_, i) => i);
+      mesh.userData.depths = new Float64Array(data.centers.length);
+      if (i !== 0) geo.setIndex(new THREE.Uint32BufferAttribute(new Uint32Array(data.p.length / 3), 1));
       mesh.userData.reference = i >= 2;
       mesh.userData.layer = i;
       mesh.renderOrder = i === 1 ? 3 : i >= 2 ? 2 : 0;
@@ -340,6 +356,28 @@ export class BlueprintRenderer {
       .addScaledVector(up, (opts.panY || 0) * panScale);
     this.camera.lookAt(target);
     this.camera.updateMatrixWorld();
+    // Three sorts meshes, not the quads batched inside a mesh. Order ghost/target
+    // surfaces back-to-front on every camera draw; keep picking in the same order.
+    const view = this.camera.matrixWorldInverse.elements;
+    for (const mesh of this.meshes) {
+      if (!mesh.material.transparent) continue;
+      const centers = mesh.userData.centers;
+      const depth = mesh.userData.depths,
+        order = mesh.userData.faceOrder,
+        index = mesh.geometry.index;
+      for (let i = 0; i < centers.length; i++) {
+        const p = centers[i];
+        depth[i] = view[2] * p[0] + view[6] * p[1] + view[10] * p[2];
+      }
+      order.sort((a, b) => depth[a] - depth[b]);
+      for (let i = 0; i < order.length; i++) {
+        const source = order[i];
+        for (let j = 0; j < 6; j++) index.array[i * 6 + j] = source * 6 + j;
+        mesh.userData.cells[i * 2] = mesh.userData.baseCells[source * 2];
+        mesh.userData.cells[i * 2 + 1] = mesh.userData.baseCells[source * 2 + 1];
+      }
+      index.needsUpdate = true;
+    }
     this.renderer.render(this.scene, this.camera);
     this.drawReferenceOutline(W, H);
     this.canvas.dataset.orbit = JSON.stringify([theta, phi]);

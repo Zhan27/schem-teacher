@@ -1,0 +1,125 @@
+{
+  "source": "https://github.com/vectorwing/FarmersDelight",
+  "commit": "e854d56d4eea8dc120650d43da0d1472711797ad",
+  "branch": "1.20",
+  "license": "MIT",
+  "blocks": ["stove", "cutting_board", "cooking_pot"],
+  "packedSHA256": "2b94df5521859f2bae68d0d405527961289e5ed5798c3ad575a7e129e89528f8",
+  "files": [
+    {
+      "path": "assets/farmersdelight/blockstates/cooking_pot.json",
+      "upstream": "src/generated/resources/assets/farmersdelight/blockstates/cooking_pot.json",
+      "sha256": "a7e3125201330224f85adb4d8a50d9bfda32852aca75e99772a39183affad89b"
+    },
+    {
+      "path": "assets/farmersdelight/blockstates/cutting_board.json",
+      "upstream": "src/generated/resources/assets/farmersdelight/blockstates/cutting_board.json",
+      "sha256": "2546ddc3199aeb570e326a836a4ede20139dbcb686a9cb80670795a3a5e55f00"
+    },
+    {
+      "path": "assets/farmersdelight/blockstates/stove.json",
+      "upstream": "src/generated/resources/assets/farmersdelight/blockstates/stove.json",
+      "sha256": "24d4f08185e6446467c6883064c34c8dc2307076d25b3711c5497b2543466fae"
+    },
+    {
+      "path": "assets/farmersdelight/models/block/cooking_pot.json",
+      "upstream": "src/main/resources/assets/farmersdelight/models/block/cooking_pot.json",
+      "sha256": "ee1de42f23b285b3fc7b85927b56e781af8cbf643407bfb7d7f810562775d3b4"
+    },
+    {
+      "path": "assets/farmersdelight/models/block/cooking_pot_handle.json",
+      "upstream": "src/main/resources/assets/farmersdelight/models/block/cooking_pot_handle.json",
+      "sha256": "a1cd0afe0d92fa5ccaf9bfa1f61270540d8ffd80da2d5c02176ba860e6b73ab9"
+    },
+    {
+      "path": "assets/farmersdelight/models/block/cooking_pot_tray.json",
+      "upstream": "src/main/resources/assets/farmersdelight/models/block/cooking_pot_tray.json",
+      "sha256": "8402c2d6a5d81f97308606541b4871aefbb4ab0671605803b7244819eef983e4"
+    },
+    {
+      "path": "assets/farmersdelight/models/block/cutting_board.json",
+      "upstream": "src/main/resources/assets/farmersdelight/models/block/cutting_board.json",
+      "sha256": "d70fc55d3d48ea5627f069ac2d4295b8521eb1d0fd9270c46d7cdffa91a99ab7"
+    },
+    {
+      "path": "assets/farmersdelight/models/block/stove.json",
+      "upstream": "src/generated/resources/assets/farmersdelight/models/block/stove.json",
+      "sha256": "75407e64574ee654c31b4e9399d7eb2a3918525ee20ebec31ff49845bec2da24"
+    },
+    {
+      "path": "assets/farmersdelight/models/block/stove_on.json",
+      "upstream": "src/generated/resources/assets/farmersdelight/models/block/stove_on.json",
+      "sha256": "26e741a349dee797521d80c353e0bf07105e52549553047666f6197949581aeb"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/cooking_pot_bottom.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/cooking_pot_bottom.png",
+      "sha256": "d5659491fe90df968153483d59cbc24e4b8bb747640b2a3da799cfaf17f8aaaf"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/cooking_pot_handle.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/cooking_pot_handle.png",
+      "sha256": "d3ce9179380c74646a4263f1a0b6fee81f3117b5fea4f620e3407bd88da782e7"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/cooking_pot_parts.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/cooking_pot_parts.png",
+      "sha256": "8808038715db9aef720af9bb5755661fb08c26a3a7585866f5fc6ee8a97e5f66"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/cooking_pot_side.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/cooking_pot_side.png",
+      "sha256": "0df5b94407abca5f64afbb2ca5c467200cc18432f49058d265c7161295508587"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/cooking_pot_top.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/cooking_pot_top.png",
+      "sha256": "5e3ba7c9ab08ca0595144b60685a55fe621338450c3455c43b5aaee03ee4f5b0"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/cutting_board.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/cutting_board.png",
+      "sha256": "5f9a2c283c603ef2a015a6259422c270226a9d137d6b6dc1e9a7e3dd8eaffad1"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/heating_tray_side.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/heating_tray_side.png",
+      "sha256": "e1d0cd97627089d6b62df501e11addff1649d25e8b241202ba14d4bff4c0ec8f"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/heating_tray_top.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/heating_tray_top.png",
+      "sha256": "48baf0e2f5911116ac9f9d6cb67f8b57f1903b8efd673f5534efc720c6b016e2"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/stove_bottom.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/stove_bottom.png",
+      "sha256": "6f1632d3c08d7b00bf3b9414337f67c692bca385f199d31419e0180026b659b5"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/stove_front.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/stove_front.png",
+      "sha256": "20294d3c09d99a4019ed4053abae09f912258e94c4d35864d4ea4336fa721f41"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/stove_front_on.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/stove_front_on.png",
+      "sha256": "3e9f06ebc1ee50101f08d11562b7e61490afe9cb8d6f711646e2015f9bc8aab9"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/stove_side.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/stove_side.png",
+      "sha256": "cd19795da1b7955b41b32ccffe3efaff07cfd200cf230011cd37df122826aba3"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/stove_top.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/stove_top.png",
+      "sha256": "0f08f941d1d40e73684e01a7efd8bf63c9fb53be7e6c723b7a24ee5fade4144f"
+    },
+    {
+      "path": "assets/farmersdelight/textures/block/stove_top_on.png",
+      "upstream": "src/main/resources/assets/farmersdelight/textures/block/stove_top_on.png",
+      "sha256": "e4947575a8193944ae5781a74d4f19aae0641e743f3a964603d541ff706491df"
+    }
+  ]
+}

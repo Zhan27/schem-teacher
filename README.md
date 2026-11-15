@@ -16,6 +16,7 @@
 - 在俯视图框选建筑部位，命名、合并、移动施工顺序；重叠区域每个目标格仍只归属一次。
 - WebGL 模型、缩放、旋转、剖切、格数与当前目标金边；无 WebGL 自动切二维备用视图。
 - **默认内置 Java 1.20.1 原版方块纹理与模型**，导入图纸即可显示，无需添加资源包、联网或安装游戏。可选 `.jar` / `.zip` 自定义材质叠加到原版基础资源，随时恢复原版。
+- 床、单/双箱子、末影箱和旗帜使用原版实体贴图与静态模型，保留 64px 贴图细节；内附 Farmer's Delight 炉灶、砧板和烹饪锅资源。
 - 主体、前置虚影和实际已确认结构分开显示；预演不会登记真实进度。
 - 门/床两格合并一次放置，双层半砖按两个物品统计；材料 CSV、完成/撤回、本机进度保存。
 - 项目 JSON、含当前图纸/资源/进度的离线 HTML，及 Ctrl+P / 打印施工图。
@@ -31,9 +32,10 @@
 
 ## 格式与实现边界
 
-- v0.3 支持 `.schem v3`。`.schem v2`、旧 `.schematic`、`.litematic` 尚未适配；可先用可信编辑器转换。图片/截图不能代替精确图纸。
+- v0.4 支持 `.schem v3`。`.schem v2`、旧 `.schematic`、`.litematic` 尚未适配；可先用可信编辑器转换。图片/截图不能代替精确图纸。
 - 创造模式优先。依赖提示是规则检查，不是玩家可达性、碰撞、红石或全部 Minecraft 物理过程模拟。复杂支撑请在游戏内确认。
-- 内置资源固定为 Java 1.20.1；其他版本新增或模组方块，以及床/箱子等内置动态模型，会保留方块 ID 并使用示意外形，数量显示在材质说明中。自定义包的缺失资源自动用内置原版补齐；一次选择一个自定义档案。
+- 内置资源固定为 Java 1.20.1；其他版本新增、未适配的模组方块或特殊实体模型会保留 ID 并使用示意外形，数量显示在材质说明中。自定义包缺失部分用内置资源补齐；一次选择一个自定义档案。
+- 床、箱子、旗帜为静态外观，不模拟开盖、旗帜摆动、NBT 图案或容器物品。三个厨具的源状态不完整时，按作者默认值展示并标明，保留原始图纸状态，不推断缺失方向。
 - 项目保留方块实体和实体元数据供查阅，但不会重建物品容器内容、执行 NBT、命令或自动导入游戏世界。
 - 首版限制：64 MB 图纸、128 MB 解压数据、800 万空间格、25 万非空气目标格；复杂图纸在旧设备上可能较慢。
 - 本工具与既有城堡专用教学工程独立，当前进度格式不导入专用版的旧 JSON。原工程不受修改。
@@ -81,7 +83,7 @@ scripts/              构建与本地预览
 
 程序代码与原创示例采用 [MIT](LICENSE)。[第三方依赖说明](THIRD_PARTY_NOTICES.md)。
 
-内置原版方块资源约 451 KiB（gzip），含 3,949 个方块渲染资源，来源与哈希见 [`assets/`](assets/NOTICE.md)。这些 Minecraft 素材的权利属于 Mojang / Microsoft，**不属于 MIT 授权**。仅应用程序代码与原创示例开源。其他导入/导出的素材同样保留原有授权。
+内置原版渲染资源约 480 KiB（gzip），含 3,977 个方块/实体渲染资源，来源与哈希见 [`assets/`](assets/NOTICE.md)。这些 Minecraft 素材的权利属于 Mojang / Microsoft，**不属于 MIT 授权**。应用代码与原创示例开源；三个厨具的 23 个资源来自 [vectorwing/FarmersDelight](https://github.com/vectorwing/FarmersDelight)，保留原作者 MIT 声明。其他导入/导出素材保留原有授权。
 
 仓库不包含游戏可执行代码、声音、他人城堡图纸、抓包文件或个人进度。维护者可用 `node scripts/pack-vanilla.mjs <local-client.jar>` 从本机对应客户端重建资源库；普通使用者无需执行。
 
@@ -89,4 +91,4 @@ scripts/              构建与本地预览
 
 ## English
 
-Schem Teacher is a client-side, reusable building lesson editor for Sponge Schematic v3. Import a local schematic, edit construction regions, follow material-aware groups, track progress, and export a self-contained offline HTML lesson. Vanilla Java 1.20.1 block textures and JSON models are built in: no resource import or network connection is required. Optional custom resources override this base. Unsupported blocks and built-in entity models use clearly labelled illustrative geometry. The code and original examples are MIT; Minecraft assets retain Mojang / Microsoft's rights. No schematic upload, account, backend or CDN is required. The tool offers rule-based grouping with manual correction, not universal architectural recognition or a Minecraft physics simulator.
+Schem Teacher is a client-side, reusable building lesson editor for Sponge Schematic v3. Import a local schematic, edit construction regions, follow material-aware groups, track progress, and export a self-contained offline HTML lesson. Java 1.20.1 resources are built in, including static beds, chests and banners; three Farmer's Delight kitchen blocks are also included. No resource import or network connection is required. Custom resources override this base. Unsupported models remain labelled; incomplete kitchen states are displayed using explicitly noted upstream defaults without altering source data. The code and original examples are MIT; Minecraft assets retain Mojang / Microsoft's rights. No schematic upload, account, backend or CDN is required. The tool offers rule-based grouping with manual correction, not universal architectural recognition or a Minecraft physics simulator.

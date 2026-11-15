@@ -327,7 +327,9 @@ async function acceptModel(m, snapshot) {
       candidate = readProgress(m);
       localWarning = true;
     }
-  const nextMaterials = snapshot?.assets ? await unpackMaterials(snapshot.assets) : await vanillaMaterials(m);
+  const refreshBuiltin =
+    !snapshot?.assets || (snapshot.assets.source === 'vanilla' && snapshot.assets.version === '1.20.1');
+  const nextMaterials = refreshBuiltin ? await vanillaMaterials(m) : await unpackMaterials(snapshot.assets);
   const nextPlan = await job({
     type: 'plan',
     model: m,
@@ -767,9 +769,23 @@ function update() {
     (materials.source === 'vanilla'
       ? t('内置原版材质 · Java {version}', { version: materials.version })
       : t('自定义材质 · 原版资源补齐')) +
-    (materials.missing.length ? ' · ' + t('{n}种方块使用示意模型', { n: materials.missing.length }) : '');
+    (materials.missing.length ? ' · ' + t('{n}种方块使用示意模型', { n: materials.missing.length }) : '') +
+    (materials.assumptions?.length
+      ? ' · ' + t('{n}种状态缺失，按模组默认值显示', { n: materials.assumptions.length })
+      : '');
   $('resetResources').hidden = materials.source === 'vanilla';
-  $('textureNote').title = materials.missing?.join(', ') || '';
+  $('textureNote').title = [
+    ...materials.missing,
+    ...(materials.assumptions || []).map(
+      (a) =>
+        a.id +
+        ' [' +
+        Object.entries(a.properties)
+          .map(([k, v]) => k + '=' + v)
+          .join(',') +
+        ']',
+    ),
+  ].join('\n');
   $('warnings').hidden = !section.warnings.length;
   $('warnings').textContent = section.warnings.slice(0, 3).map(message).join('; ');
   $('pendingText').textContent = t('待放 {n} 次', { n: pending.length });

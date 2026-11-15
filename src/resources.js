@@ -6,7 +6,7 @@ export function readResourceArchive(bytes) {
   const files = unzipSync(bytes, {
     filter: (e) => {
       if (
-        !/^assets\/[a-z0-9_.-]+\/(?:blockstates\/.*\.json|models\/.*\.json|textures\/block\/.*\.png)$/.test(
+        !/^assets\/[a-z0-9_.-]+\/(?:blockstates\/.*\.json|models\/.*\.json|textures\/(?:block\/.*|entity\/(?:bed\/.*|chest\/.*|banner\/.*|banner_base))\.png)$/.test(
           e.name,
         )
       )

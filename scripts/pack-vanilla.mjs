@@ -8,7 +8,7 @@ const clientPath = process.argv[2];
 if (!clientPath) throw Error('Usage: node scripts/pack-vanilla.mjs <local-client.jar>');
 const client = await fs.readFile(clientPath);
 const allowed =
-  /^assets\/minecraft\/(?:blockstates\/.*\.json|models\/block\/.*\.json|textures\/block\/.*\.png)$/;
+  /^assets\/minecraft\/(?:blockstates\/.*\.json|models\/block\/.*\.json|textures\/(?:block\/.*|entity\/(?:bed\/.*|chest\/.*|banner\/base|banner_base))\.png)$/;
 const extracted = unzipSync(client, { filter: (e) => e.name === 'version.json' || allowed.test(e.name) });
 const version = JSON.parse(new TextDecoder().decode(extracted['version.json'])).id;
 if (version !== '1.20.1') throw Error('The bundled library currently targets Java 1.20.1');

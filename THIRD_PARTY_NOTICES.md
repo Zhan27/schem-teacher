@@ -10,3 +10,5 @@ Runtime dependency license text is embedded in the generated standalone HTML. Th
 The MIT license for this repository covers its original source and authored examples. It does not relicense resources imported by a user, Minecraft assets, or third-party schematics.
 
 The bundled Minecraft: Java Edition 1.20.1 block-rendering resources are copyright Mojang Studios / Microsoft, excluded from MIT. See [asset provenance and notice](assets/NOTICE.md). This is an independent, unofficial project, not approved by or associated with Mojang or Microsoft. The standalone HTML embeds this notice alongside the dependency licenses.
+
+Farmer's Delight kitchen resources: copyright (c) 2020 vectorwing, MIT, https://github.com/vectorwing/FarmersDelight . The 23 files for stove/cutting board/cooking pot are pinned to commit `e854d56d4eea8dc120650d43da0d1472711797ad` (1.20). Full license: [assets/farmers-delight-LICENSE.txt](assets/farmers-delight-LICENSE.txt), also embedded in standalone exports. The app does not include or execute mod code.

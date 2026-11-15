@@ -26,6 +26,7 @@ let html = await fs.readFile('src/index.html', 'utf8');
 const licenses = [
   await fs.readFile('LICENSE', 'utf8'),
   await fs.readFile('assets/NOTICE.md', 'utf8'),
+  await fs.readFile('assets/farmers-delight-LICENSE.txt', 'utf8'),
   ...(await Promise.all(
     ['three', 'fflate'].map((n) => fs.readFile('node_modules/' + n + '/LICENSE', 'utf8')),
   )),

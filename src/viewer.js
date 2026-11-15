@@ -219,12 +219,13 @@ export class Viewer {
           if (next && this.materials.models[next[3]]?.full && layer(next) === layer(block)) continue;
         }
         const world = f[0].map((v) => v.map((v, i) => v + block[i])),
-          depth = world.reduce((s, v) => s + (v[0] + v[2]) * (co + si) + v[1], 0) / 4;
+          depth = world.reduce((s, v) => s + v[0] * (co + si) + v[2] * (co - si) + v[1], 0) / 4;
         faces.push({ f, block, world, depth });
       }
     faces.sort((a, b) => a.depth - b.depth);
     this.hits = [];
-    const cache = new Map();
+    const cache = new Map(),
+      faceCache = new Map();
     for (const { f, block, world } of faces) {
       const poly = world.map((v) => P(...v));
       if (
@@ -245,9 +246,32 @@ export class Viewer {
         let image = cache.get(f[2]);
         if (!image) {
           image = document.createElement('canvas');
-          image.width = image.height = 16;
+          image.width = raw.width;
+          image.height = raw.height;
           image.getContext('2d').putImageData(raw, 0, 0);
           cache.set(f[2], image);
+        }
+        const key = f[2] + '|' + f[1].flat().join(','),
+          sampled = faceCache.get(key) || document.createElement('canvas');
+        if (!faceCache.has(key)) {
+          sampled.width = sampled.height = 16;
+          const g = sampled.getContext('2d'),
+            uv = f[1].map((p) => [(p[0] * raw.width) / 16, (p[1] * raw.height) / 16]);
+          const ux = uv[1][0] - uv[0][0],
+            uy = uv[1][1] - uv[0][1],
+            vx = uv[3][0] - uv[0][0],
+            vy = uv[3][1] - uv[0][1],
+            det = ux * vy - uy * vx;
+          if (Math.abs(det) > 1e-9) {
+            const a = (16 * vy) / det,
+              b = (-16 * uy) / det,
+              c = (-16 * vx) / det,
+              d = (16 * ux) / det;
+            g.imageSmoothingEnabled = false;
+            g.setTransform(a, b, c, d, -a * uv[0][0] - c * uv[0][1], -b * uv[0][0] - d * uv[0][1]);
+            g.drawImage(image, 0, 0);
+          }
+          faceCache.set(key, sampled);
         }
         const a = (poly[1][0] - poly[0][0]) / 16,
           b = (poly[1][1] - poly[0][1]) / 16,
@@ -257,7 +281,7 @@ export class Viewer {
         path();
         ctx.clip();
         ctx.setTransform(dpr * a, dpr * b, dpr * d, dpr * e, dpr * poly[0][0], dpr * poly[0][1]);
-        ctx.drawImage(image, 0, 0);
+        ctx.drawImage(sampled, 0, 0);
         ctx.restore();
       } else {
         path();

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-11-15
+
+- Correct quad winding and back-face culling. Sort transparent surfaces within each batch when the camera moves, preserving picking IDs; render confirmed structure with opaque depth occlusion.
+- Correct rotated 2D depth sorting and per-face UV sampling.
+- Add static original-textured beds, chests (single/double/trapped/ender) and banners; preserve native image sizes in rendering, project snapshots and offline exports.
+- Fix the bed-head pillow UV direction so white pillows stay at the outer head end and red surfaces join the foot for all four facings.
+- Bundle pinned, attributed Farmer's Delight kitchen resources. Mark incomplete source states as upstream defaults instead of changing or inventing source data.
+- Refresh old default-resource snapshots with the corrected library while preserving custom snapshots and construction progress.
+- Add transparent-surface pixel, bed-direction, native-texture offline, entity-model and resource-provenance regressions.
+
 ## 0.3.0 — 2026-11-15
 
 - Bundle the original Java 1.20.1 block PNGs and JSON models as a 451 KiB compressed resource library. Schematics use vanilla resources automatically, including when fully offline.
