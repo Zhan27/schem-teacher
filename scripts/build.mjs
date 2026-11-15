@@ -22,9 +22,12 @@ const app = await build({
 });
 const styles = await fs.readFile('src/style.css', 'utf8');
 let html = await fs.readFile('src/index.html', 'utf8');
-const licenses = await Promise.all(
-  ['three', 'fflate'].map((n) => fs.readFile('node_modules/' + n + '/LICENSE', 'utf8')),
-);
+const licenses = [
+  await fs.readFile('LICENSE', 'utf8'),
+  ...(await Promise.all(
+    ['three', 'fflate'].map((n) => fs.readFile('node_modules/' + n + '/LICENSE', 'utf8')),
+  )),
+];
 html = html
   .replace('/* STYLES */', () => styles)
   .replace('/* APP_SOURCE */', () => app.outputFiles[0].text.replaceAll('</', '<\\/'))

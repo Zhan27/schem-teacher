@@ -72,16 +72,15 @@ export class Viewer {
   setMaterials(materials) {
     this.materials = materials;
     if (this.renderer) {
-      for (const m of this.renderer.meshes) {
-        m.geometry.dispose();
-        m.material.dispose();
-      }
       this.renderer.atlas?.dispose();
-      this.renderer.renderer.dispose();
-      this.renderer = null;
-      const clone = this.canvas.cloneNode();
-      this.canvas.replaceWith(clone);
-      this.canvas = clone; /* caller recreates the viewer when switching material sources */
+      this.renderer.atlas = null;
+      this.renderer.signature = '';
+      this.renderer.source = {
+        models: materials.models,
+        textures: materials.textures,
+        fallback: (b) => materials.models[b[3]],
+      };
+      return;
     }
     if (canWebGL())
       this.renderer = new BlueprintRenderer(this.canvas, {
@@ -94,6 +93,42 @@ export class Viewer {
     this.yaw = this.pitch = this.panX = this.panY = 0;
     this.zoom = 1;
     this.draw();
+  }
+  getPose() {
+    return { yaw: this.yaw, pitch: this.pitch, zoom: this.zoom, panX: this.panX, panY: this.panY };
+  }
+  setPose(pose) {
+    if (!pose || typeof pose !== 'object') return;
+    for (const key of ['yaw', 'pitch', 'zoom', 'panX', 'panY'])
+      if (Number.isFinite(pose[key])) this[key] = pose[key];
+    this.zoom = Math.max(0.3, Math.min(8, this.zoom));
+    this.pitch = Math.max(-0.9, Math.min(0.42, this.pitch));
+  }
+  dispose() {
+    if (!this.renderer) return;
+    const renderer = this.renderer,
+      geometries = new Set(),
+      materials = new Set();
+    for (const scene of [renderer.scene, renderer.maskScene, renderer.outlineScene])
+      scene?.traverse((child) => {
+        if (child.geometry) geometries.add(child.geometry);
+        if (child.material)
+          for (const material of Array.isArray(child.material) ? child.material : [child.material])
+            materials.add(material);
+      });
+    geometries.forEach((g) => g.dispose());
+    materials.forEach((m) => m.dispose());
+    for (const material of [
+      renderer.referenceMaskMaterial,
+      renderer.targetMaskMaterial,
+      renderer.pendingMaskMaterial,
+    ])
+      material?.dispose();
+    renderer.referenceMask?.dispose();
+    renderer.atlas?.dispose();
+    renderer.renderer.dispose();
+    renderer.renderer.forceContextLoss();
+    this.renderer = null;
   }
   show(blocks, targets, ghosts, bounds, groundY) {
     this.data = { blocks, targets, ghosts, bounds, groundY };

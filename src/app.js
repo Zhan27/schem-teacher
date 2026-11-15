@@ -1,3 +1,4 @@
+import { t, message, unit, getLocale, setLocale, applyTranslations } from './i18n.js';
 import { gzipSync, gunzipSync } from 'fflate';
 import { parseSchematic, position, validateModel } from './schematic.js';
 import {
@@ -42,7 +43,65 @@ const names = {
   iron_bars: '铁栏杆',
   flower_pot: '花盆',
 };
-const itemName = (id) => names[id.split(':').pop()] || id;
+const itemName = (id) =>
+  getLocale() === 'zh'
+    ? names[id.split(':').pop()] || id
+    : (id.startsWith('minecraft:') ? '' : id.split(':')[0] + ': ') +
+      id
+        .split(':')
+        .pop()
+        .split('_')
+        .map((s) => s[0].toUpperCase() + s.slice(1))
+        .join(' ');
+const regionName = (task) =>
+  task.region === 'main'
+    ? t(regions.length ? '未划分部分' : '整体建筑')
+    : (() => {
+        const r = regions.find((r) => r.id === task.region);
+        return r?.autoNameIndex ? t('部位 {n}', { n: r.autoNameIndex }) : task.name;
+      })();
+const lessonTitle = (task) =>
+  regionName(task) +
+  ' · ' +
+  t(task.stage === 2 ? '地下部分' : task.stage === 1 ? '细节内装' : '主体') +
+  ' y' +
+  task.bounds[2] +
+  '–' +
+  (task.bounds[3] - 1);
+const modelName = () =>
+  ['house', 'tower', 'basement'].includes(model?.demoKind)
+    ? t({ house: '工坊小屋', tower: '工坊塔楼', basement: '带地下室小屋' }[model.demoKind])
+    : model?.name;
+let statusMessage = null,
+  storageMessage = '',
+  mapMessage = null,
+  committedLayout = null;
+function renderStatus() {
+  if (statusMessage)
+    $('status').textContent = message(
+      t(
+        statusMessage.key,
+        Object.fromEntries(Object.entries(statusMessage.values).map(([k, v]) => [k, message(v)])),
+      ),
+    );
+}
+function setMapMessage(key, values = {}) {
+  mapMessage = { key, values };
+  $('mapInfo').textContent = t(key, values);
+}
+function refreshLanguage() {
+  applyTranslations();
+  $('language').value = getLocale();
+  document.title = t('方块工坊 · 图纸教学生成器');
+  if (plan) {
+    update();
+    if (picked) inspect(picked);
+  }
+  renderStatus();
+  if (mapMessage) $('mapInfo').textContent = t(mapMessage.key, mapMessage.values);
+  if (storageMessage) $('storageStatus').textContent = t(storageMessage);
+}
+
 let model = null,
   plan = null,
   settings = null,
@@ -60,7 +119,8 @@ let model = null,
   timer = null,
   jobWorker = null,
   jobReject = null,
-  saveTimer = null;
+  saveTimer = null,
+  cleanupJob = null;
 const storageKey = () => 'schem-teacher:v1:' + model.hash;
 const task = () => plan?.tasks[Math.max(0, Math.min(taskIndex, plan.tasks.length - 1))];
 const activeOps = () => {
@@ -68,8 +128,9 @@ const activeOps = () => {
   return !t ? [] : $('granularity').value === 'group' ? t.runs[groupIndex] || [] : t.ops;
 };
 const pendingOps = () => activeOps().filter((i) => !done.has(plan.ops[i].id));
-const say = (s, error = false) => {
-  $('status').textContent = s;
+const say = (s, error = false, values = {}) => {
+  statusMessage = { key: s, values };
+  renderStatus();
   $('status').style.color = error ? '#8c3f35' : '';
 };
 function download(name, body, type) {
@@ -91,25 +152,44 @@ function serialize() {
     taskIndex,
     groupIndex,
     assets: packMaterials(materials),
+    locale: getLocale(),
     view: {
       cut: Number($('cut').value),
       granularity: $('granularity').value,
       refs: $('showReferences').checked,
       future: $('showFuture').checked,
+      layer: Number($('mapLayer').value),
+      camera: viewer?.getPose(),
     },
   };
 }
 function localSnapshot() {
-  return { settings, regions, done: [...done], taskIndex, groupIndex };
+  return {
+    settings,
+    regions,
+    done: [...done],
+    taskIndex,
+    groupIndex,
+    view: {
+      cut: Number($('cut').value),
+      granularity: $('granularity').value,
+      refs: $('showReferences').checked,
+      future: $('showFuture').checked,
+      layer: Number($('mapLayer').value),
+      camera: viewer?.getPose(),
+    },
+  };
 }
 function flush() {
   clearTimeout(saveTimer);
   if (!model) return;
   try {
     localStorage.setItem(storageKey(), JSON.stringify(localSnapshot()));
-    $('storageStatus').textContent = '进度已保存在本机；导入同一图纸可恢复';
+    storageMessage = '进度已保存在本机；导入同一图纸可恢复';
+    $('storageStatus').textContent = t(storageMessage);
   } catch {
-    $('storageStatus').textContent = '本机存储已满，请保存项目或导出网页';
+    storageMessage = '本机存储已满，请保存项目或导出网页';
+    $('storageStatus').textContent = t(storageMessage);
   }
 }
 function save() {
@@ -126,7 +206,7 @@ document.addEventListener('visibilitychange', () => {
 async function job(data, transfer = []) {
   if (jobWorker) throw Error('请等待当前任务或先取消');
   $('busy').hidden = false;
-  $('busyText').textContent = '正在本地计算…';
+  $('busyText').textContent = t('正在本地计算…');
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(new Blob([WORKER_SOURCE], { type: 'text/javascript' })),
       worker = new Worker(url);
@@ -137,11 +217,13 @@ async function job(data, transfer = []) {
       URL.revokeObjectURL(url);
       jobWorker = null;
       jobReject = null;
+      cleanupJob = null;
       $('busy').hidden = true;
     };
+    cleanupJob = finish;
     worker.onmessage = ({ data }) => {
       if (data.progress) {
-        $('busyText').textContent = data.progress;
+        $('busyText').textContent = message(data.progress);
         return;
       }
       finish();
@@ -155,24 +237,39 @@ async function job(data, transfer = []) {
   });
 }
 $('cancelJob').onclick = () => {
-  jobWorker?.terminate();
-  jobWorker = null;
-  jobReject?.(Error('已取消，本次导入未应用'));
-  jobReject = null;
+  const reject = jobReject;
+  cleanupJob?.();
+  reject?.(Error('已取消，本次导入未应用'));
   $('busy').hidden = true;
 };
 async function replan() {
   if (!model) return;
   stop();
-  validateSettings(settings, model);
-  validateRegions(regions, model);
-  plan = await job({ type: 'plan', model, settings, regions });
-  const valid = new Set(plan.ops.map((o) => o.id));
-  done = new Set([...done].filter((x) => valid.has(x)));
-  taskIndex = Math.min(taskIndex, plan.tasks.length - 1);
-  groupIndex = 0;
-  update();
-  save();
+  const nextSettings = structuredClone(settings),
+    nextRegions = structuredClone(regions);
+  try {
+    validateSettings(nextSettings, model);
+    validateRegions(nextRegions, model);
+    const nextPlan = await job({ type: 'plan', model, settings: nextSettings, regions: nextRegions });
+    plan = nextPlan;
+    settings = nextSettings;
+    regions = nextRegions;
+    committedLayout = { settings: structuredClone(settings), regions: structuredClone(regions) };
+    const valid = new Set(plan.ops.map((o) => o.id));
+    done = new Set([...done].filter((x) => valid.has(x)));
+    taskIndex = Math.min(taskIndex, plan.tasks.length - 1);
+    groupIndex = 0;
+    update();
+    save();
+  } catch (e) {
+    if (committedLayout) {
+      settings = structuredClone(committedLayout.settings);
+      regions = structuredClone(committedLayout.regions);
+      readSettings();
+      update();
+    }
+    throw e;
+  }
 }
 function readSettings() {
   for (const id of [
@@ -189,42 +286,72 @@ function readSettings() {
     $(id).value = settings[id];
   $('deferBasement').checked = settings.deferBasement;
 }
-function restoreProgress(raw) {
-  if (!raw) return;
-  validateSettings(raw.settings, model);
-  validateRegions(raw.regions || [], model);
+function readProgress(m, raw) {
+  const result = {
+    settings: defaultSettings(m),
+    regions: [],
+    done: [],
+    taskIndex: 0,
+    groupIndex: 0,
+    view: null,
+  };
+  if (!raw) return result;
+  validateSettings(raw.settings, m);
+  validateRegions(raw.regions || [], m);
   if (
     !Array.isArray(raw.done) ||
-    raw.done.length > model.cells.length ||
+    raw.done.length > m.cells.length ||
     raw.done.some((x) => typeof x !== 'string')
   )
     throw Error('进度列表无效');
-  settings = { ...raw.settings };
-  regions = raw.regions;
-  done = new Set(raw.done);
-  taskIndex = Number.isInteger(raw.taskIndex) ? Math.max(0, raw.taskIndex) : 0;
-  groupIndex = 0;
+  return {
+    settings: structuredClone(raw.settings),
+    regions: structuredClone(raw.regions || []),
+    done: raw.done,
+    taskIndex: Number.isInteger(raw.taskIndex) ? Math.max(0, raw.taskIndex) : 0,
+    groupIndex: Number.isInteger(raw.groupIndex) ? Math.max(0, raw.groupIndex) : 0,
+    view: raw.view,
+  };
 }
 async function acceptModel(m, snapshot) {
   validateModel(m);
-  stop();
-  model = m;
-  settings = defaultSettings(m);
-  regions = [];
-  done = new Set();
-  history = [];
-  taskIndex = groupIndex = 0;
-  picked = null;
-  mapSelection = null;
-  if (snapshot) restoreProgress(snapshot);
+  let candidate,
+    localWarning = false;
+  if (snapshot) candidate = readProgress(m, snapshot);
   else
     try {
-      const raw = localStorage.getItem(storageKey());
-      if (raw) restoreProgress(JSON.parse(raw));
+      const raw = localStorage.getItem('schem-teacher:v1:' + m.hash);
+      candidate = readProgress(m, raw ? JSON.parse(raw) : null);
     } catch {
-      say('旧本机进度无法读取；图纸已正常导入', true);
+      candidate = readProgress(m);
+      localWarning = true;
     }
-  materials = snapshot?.assets ? await unpackMaterials(snapshot.assets) : defaultMaterials(model);
+  const nextMaterials = snapshot?.assets ? await unpackMaterials(snapshot.assets) : defaultMaterials(m);
+  const nextPlan = await job({
+    type: 'plan',
+    model: m,
+    settings: candidate.settings,
+    regions: candidate.regions,
+  });
+  // Commit only after the entire incoming project has validated and planned.
+  stop();
+  flush();
+  model = m;
+  plan = nextPlan;
+  settings = candidate.settings;
+  regions = candidate.regions;
+  materials = nextMaterials;
+  committedLayout = { settings: structuredClone(settings), regions: structuredClone(regions) };
+  const valid = new Set(plan.ops.map((o) => o.id));
+  done = new Set(candidate.done.filter((id) => valid.has(id)));
+  history = [];
+  taskIndex = Math.min(candidate.taskIndex, plan.tasks.length - 1);
+  groupIndex = Math.min(candidate.groupIndex, task().runs.length - 1);
+  picked = null;
+  mapSelection = null;
+  mapMessage = null;
+  $('mapInfo').innerHTML = '<span data-i18n="点击查格子；拖动框选一个建筑部位。"></span>';
+  if (['zh', 'en'].includes(snapshot?.locale)) setLocale(snapshot.locale);
   readSettings();
   $('cut').max = model.dimensions[1] - 1;
   $('cut').value = model.dimensions[1] - 1;
@@ -233,28 +360,33 @@ async function acceptModel(m, snapshot) {
   $('boxX0').value = $('boxZ0').value = 0;
   $('boxX1').value = model.dimensions[0] - 1;
   $('boxZ1').value = model.dimensions[2] - 1;
+  viewer?.dispose();
   const previous = $('scene'),
     clone = previous.cloneNode();
   previous.replaceWith(clone);
-  if (viewer?.renderer) {
-    viewer.renderer.renderer.dispose();
-    viewer.renderer.atlas?.dispose();
-  }
   viewer = new Viewer(clone, inspect);
   viewer.setMaterials(materials);
   viewer.onDraw = drawDimensions;
   $('welcome').hidden = true;
   $('workspace').hidden = false;
-  await replan();
-  if (snapshot?.view) {
-    const v = snapshot.view;
-    $('cut').value = Math.max(0, Math.min(model.dimensions[1] - 1, Number(v.cut)));
-    $('granularity').value = ['group', 'package'].includes(v.granularity) ? v.granularity : 'package';
-    $('showReferences').checked = v.refs !== false;
-    $('showFuture').checked = v.future === true;
-    update();
+  const v = candidate.view;
+  $('granularity').value = v?.granularity === 'group' ? 'group' : 'package';
+  $('showReferences').checked = v?.refs !== false;
+  $('showFuture').checked = v?.future === true;
+  if (Number.isFinite(v?.cut)) $('cut').value = Math.max(0, Math.min(model.dimensions[1] - 1, v.cut));
+  if (v?.camera) viewer.setPose(v.camera);
+  refreshLanguage();
+  if (Number.isInteger(v?.layer) && [...$('mapLayer').options].some((o) => Number(o.value) === v.layer)) {
+    $('mapLayer').value = v.layer;
+    drawMap();
   }
-  say('图纸已载入，先确认地面与朝向，再调整分区。文件仅在本机处理。');
+  save();
+  say(
+    localWarning
+      ? '旧本机进度无法读取；图纸已正常导入'
+      : '图纸已载入，先确认地面与朝向，再调整分区。文件仅在本机处理。',
+    localWarning,
+  );
 }
 async function loadFile(file) {
   if (!file) return;
@@ -294,6 +426,7 @@ for (const [id, kind] of [
         },
         [buffer],
       );
+    result.model.demoKind = kind;
     await acceptModel(result.model);
   });
 $('projectOpen').onclick = () => $('projectFile').click();
@@ -308,7 +441,7 @@ $('projectFile').onchange = guard(async () => {
 $('saveProject').onclick = () => {
   if (!model) return say('请先导入图纸');
   flush();
-  download(model.name + '-教学项目.json', JSON.stringify(serialize()), 'application/json');
+  download(modelName() + '-' + t('教学项目') + '.json', JSON.stringify(serialize()), 'application/json');
 };
 $('importResources').onclick = () => $('resourcesFile').click();
 $('resourcesFile').onchange = guard(async () => {
@@ -317,7 +450,7 @@ $('resourcesFile').onchange = guard(async () => {
   const buffer = await f.arrayBuffer(),
     files = await job({ type: 'resources', buffer }, [buffer]);
   $('busy').hidden = false;
-  $('busyText').textContent = '处理方块模型与材质…';
+  $('busyText').textContent = t('处理方块模型与材质…');
   let next;
   try {
     next = await importMaterials(model, files);
@@ -325,18 +458,18 @@ $('resourcesFile').onchange = guard(async () => {
     $('busy').hidden = true;
   }
   materials = next;
+  const pose = viewer.getPose();
+  viewer.dispose();
   const previous = $('scene'),
     clone = previous.cloneNode();
   previous.replaceWith(clone);
-  if (viewer.renderer) {
-    viewer.renderer.renderer.dispose();
-    viewer.renderer.atlas?.dispose();
-  }
   viewer = new Viewer(clone, inspect);
   viewer.setMaterials(materials);
   viewer.onDraw = drawDimensions;
   update();
-  say('本机材质已载入；' + materials.missing.length + '种状态仍使用示意模型。');
+  viewer.setPose(pose);
+  drawScene();
+  say('本机材质已载入；{n}种状态仍使用示意模型。', false, { n: materials.missing.length });
 });
 function switchTask(i) {
   stop();
@@ -350,7 +483,7 @@ function switchTask(i) {
 function stop() {
   playing = false;
   clearInterval(timer);
-  $('playPreview').textContent = '预演 ▶';
+  $('playPreview').textContent = t('预演 ▶');
 }
 function setGroup(i) {
   groupIndex = Math.max(0, Math.min(task().runs.length - 1, i));
@@ -385,7 +518,7 @@ $('playPreview').onclick = () => {
   }
   $('granularity').value = 'group';
   playing = true;
-  $('playPreview').textContent = '停止预演 ❚❚';
+  $('playPreview').textContent = t('停止预演 ❚❚');
   update();
   timer = setInterval(() => {
     if (groupIndex >= task().runs.length - 1) {
@@ -499,9 +632,11 @@ function inspect(b) {
   $('inspector').hidden = false;
   $('inspector').textContent =
     itemName(s.split('[')[0]) +
-    ' · 原图 ' +
+    ' · ' +
+    t('原图') +
+    ' ' +
     b.slice(0, 3).join(' / ') +
-    (w ? ' · 游戏 ' + w.join(' / ') : '') +
+    (w ? ' · ' + t('游戏') + ' ' + w.join(' / ') : '') +
     ' · ' +
     s;
   $('groundFromPick').disabled = false;
@@ -517,61 +652,79 @@ $('groundFromPick').onclick = guard(async () => {
 });
 function table(items) {
   return (
-    '<table class="table"><thead><tr><th>物品</th><th>数量</th></tr></thead><tbody>' +
+    '<table class="table"><thead><tr><th>' +
+    esc(t('物品')) +
+    '</th><th>' +
+    esc(t('数量')) +
+    '</th></tr></thead><tbody>' +
     Object.entries(items)
       .sort((a, b) => b[1] - a[1])
-      .map(
-        ([id, n]) =>
+      .map(([id, n]) => {
+        const size = id.endsWith('_bed') ? 1 : id.endsWith('_banner') ? 16 : 64;
+        const stacks =
+          size > 1 && n >= size
+            ? ' (' +
+              t('{n}组{rest}', { n: Math.floor(n / size), rest: n % size ? ' + ' + (n % size) : '' }) +
+              ')'
+            : '';
+        return (
           '<tr><td title="' +
           esc(id) +
           '">' +
           esc(itemName(id)) +
           '</td><td>' +
           n +
-          (n >= 64 ? '（' + Math.floor(n / 64) + '组' + (n % 64 ? '＋' + (n % 64) : '') + '）' : '') +
-          '</td></tr>',
-      )
+          esc(stacks) +
+          '</td></tr>'
+        );
+      })
       .join('') +
     '</tbody></table>'
   );
 }
 function update() {
   if (!plan) return;
-  const t = task(),
+  const section = task(),
     ids = activeOps(),
     pending = pendingOps(),
     doneCells = plan.ops.filter((o) => done.has(o.id)).reduce((n, o) => n + o.cells.length, 0);
-  $('projectTitle').textContent = model.name;
-  $('modelMeta').textContent =
-    model.dimensions.join(' × ') +
-    ' · ' +
-    model.cells.length.toLocaleString() +
-    '格 · Sponge v3 · 数据版本 ' +
-    model.dataVersion +
-    ' · 偏移 ' +
-    model.offset.join('/');
-  $('progressText').textContent =
-    '已确认 ' + doneCells.toLocaleString() + ' / ' + model.cells.length.toLocaleString() + ' 格';
+  $('projectTitle').textContent = modelName();
+  $('modelMeta').textContent = t(
+    '{dimensions} · {cells}格 · Sponge v3 · 数据版本 {version} · 偏移 {offset}',
+    {
+      dimensions: model.dimensions.join(' × '),
+      cells: model.cells.length.toLocaleString(),
+      version: model.dataVersion,
+      offset: model.offset.join('/'),
+    },
+  );
+  $('progressText').textContent = t('已确认 {done} / {total} 格', {
+    done: doneCells.toLocaleString(),
+    total: model.cells.length.toLocaleString(),
+  });
   $('progressBar').style.width = (doneCells / model.cells.length) * 100 + '%';
-  $('taskTitle').innerHTML = esc(t.title).replace(/y-?\d+–-?\d+/, '<span class="layer">$&</span>');
-  $('taskPart').textContent = t.stage === 2 ? '地下部分后建' : t.stage === 1 ? '细节与内装' : '主体施工';
+  $('taskTitle').innerHTML = esc(lessonTitle(section)).replace(
+    /y-?\d+–-?\d+/,
+    '<span class="layer">$&</span>',
+  );
+  $('taskPart').textContent = t(
+    section.stage === 2 ? '地下部分后建' : section.stage === 1 ? '细节与内装' : '主体施工',
+  );
   $('taskPosition').textContent = taskIndex + 1 + ' / ' + plan.tasks.length;
-  $('taskTotal').textContent = plan.tasks.length + ' 段';
+  $('taskTotal').textContent = t('{n} 段', { n: plan.tasks.length });
   $('taskList').innerHTML = plan.tasks
     .map(
-      (t, i) =>
+      (section, i) =>
         '<button data-task="' +
         i +
         '" class="' +
         (i === taskIndex ? 'active ' : '') +
-        (t.ops.every((oi) => done.has(plan.ops[oi].id)) ? 'finished' : '') +
+        (section.ops.every((oi) => done.has(plan.ops[oi].id)) ? 'finished' : '') +
         '">' +
-        esc(t.title) +
+        esc(lessonTitle(section)) +
         '<small>' +
-        t.count +
-        '格 · ' +
-        t.runs.length +
-        '组</small></button>',
+        esc(t('{cells}格 · {groups}组', { cells: section.count, groups: section.runs.length })) +
+        '</small></button>',
     )
     .join('');
   for (const e of $('taskList').querySelectorAll('[data-task]'))
@@ -579,47 +732,46 @@ function update() {
   $('prevTask').disabled = taskIndex === 0;
   $('nextTask').disabled = taskIndex === plan.tasks.length - 1;
   $('groupControls').hidden = $('granularity').value !== 'group';
-  $('groupSeek').max = t.runs.length - 1;
+  $('groupSeek').max = section.runs.length - 1;
   $('groupSeek').value = groupIndex;
-  $('groupPosition').textContent = groupIndex + 1 + ' / ' + t.runs.length + '组';
+  $('groupPosition').textContent = t('{current} / {total}组', {
+    current: groupIndex + 1,
+    total: section.runs.length,
+  });
   $('prevGroup').disabled = groupIndex === 0;
-  $('nextGroup').disabled = groupIndex === t.runs.length - 1;
+  $('nextGroup').disabled = groupIndex === section.runs.length - 1;
   $('materials').innerHTML = table(sumItems(pending.map((i) => plan.ops[i])));
   const bs = ids.flatMap((i) => plan.ops[i].cells.map((ci) => model.cells[ci])),
-    b = boxOf(bs.length ? bs : t.ops.flatMap((i) => plan.ops[i].cells.map((ci) => model.cells[ci])));
-  $('rangeText').textContent =
-    '实际目标 ' +
-    bs.length +
-    ' 格；外接范围 ' +
-    (b[1] - b[0]) +
-    ' × ' +
-    (b[5] - b[4]) +
-    ' 格，高 ' +
-    (b[3] - b[2]) +
-    ' 层。空位保持留空。';
+    b = boxOf(bs.length ? bs : section.ops.flatMap((i) => plan.ops[i].cells.map((ci) => model.cells[ci])));
+  $('rangeText').textContent = t('实际目标 {n} 格；外接范围 {x} × {z} 格，高 {y} 层。空位保持留空。', {
+    n: bs.length,
+    x: b[1] - b[0],
+    z: b[5] - b[4],
+    y: b[3] - b[2],
+  });
   $('groundText').textContent =
-    '地面方块：原图y' +
-    settings.groundY +
-    '；行走面在y' +
-    (Number(settings.groundY) + 1) +
-    '。' +
-    (playing ? '正在预演，不登记实际完成。' : '');
+    t('地面方块：原图y{block}；行走面在y{surface}。', {
+      block: settings.groundY,
+      surface: Number(settings.groundY) + 1,
+    }) + (playing ? ' ' + t('正在预演，不登记实际完成。') : '');
   $('textureNote').textContent = materials.authentic
-    ? '本机导入的原版材质；' + materials.missing.length + '种方块使用示意模型。'
-    : '自制示意材质。导入本机客户端.jar或资源包.zip，可使用原始纹理与模型。';
-  $('textureNote').title = materials.missing?.join('、') || '';
-  $('warnings').hidden = !t.warnings.length;
-  $('warnings').textContent = t.warnings.slice(0, 3).join('；');
-  $('pendingText').textContent = '待放 ' + pending.length + ' 次';
-  $('complete').textContent = $('granularity').value === 'group' ? '登记本组完成 →' : '登记本段完成 →';
+    ? t('本机导入的原版材质；{n}种方块使用示意模型。', { n: materials.missing.length })
+    : t('自制示意材质。导入本机客户端.jar或资源包.zip，可使用原始纹理与模型。');
+  $('textureNote').title = materials.missing?.join(', ') || '';
+  $('warnings').hidden = !section.warnings.length;
+  $('warnings').textContent = section.warnings.slice(0, 3).map(message).join('; ');
+  $('pendingText').textContent = t('待放 {n} 次', { n: pending.length });
+  $('complete').textContent = t($('granularity').value === 'group' ? '登记本组完成 →' : '登记本段完成 →');
   $('complete').disabled = !pending.length;
   $('undo').disabled = !history.length;
   $('cutValue').textContent = 'y≤' + $('cut').value;
-  const ys = [...new Set(t.ops.flatMap((i) => plan.ops[i].cells.map((ci) => model.cells[ci][1])))].sort(
+  const ys = [...new Set(section.ops.flatMap((i) => plan.ops[i].cells.map((ci) => model.cells[ci][1])))].sort(
       (a, b) => a - b,
     ),
     previous = Number($('mapLayer').value);
-  $('mapLayer').innerHTML = ys.map((y) => '<option value="' + y + '">原图 y' + y + '</option>').join('');
+  $('mapLayer').innerHTML = ys
+    .map((y) => '<option value="' + y + '">' + esc(t('原图 y{y}', { y })) + '</option>')
+    .join('');
   if (ys.includes(previous)) $('mapLayer').value = previous;
   drawScene();
   drawMap();
@@ -627,13 +779,13 @@ function update() {
 }
 function drawScene() {
   if (!viewer || !plan) return;
-  const t = task(),
+  const section = task(),
     current = new Set(pendingOps().flatMap((i) => plan.ops[i].cells)),
     actual = new Set(plan.ops.filter((o) => done.has(o.id)).flatMap((o) => o.cells)),
     ref = new Set(),
-    before = plan.tasks.slice(0, taskIndex).flatMap((t) => t.ops);
-  if ($('granularity').value === 'group') before.push(...t.runs.slice(0, groupIndex).flat());
-  const focus = t.bounds;
+    before = plan.tasks.slice(0, taskIndex).flatMap((previous) => previous.ops);
+  if ($('granularity').value === 'group') before.push(...section.runs.slice(0, groupIndex).flat());
+  const focus = section.bounds;
   if ($('showReferences').checked)
     for (const oi of before)
       for (const ci of plan.ops[oi].cells) {
@@ -648,7 +800,8 @@ function drawScene() {
           ref.add(ci);
       }
   if (playing)
-    for (const oi of t.runs.slice(0, groupIndex).flat()) for (const ci of plan.ops[oi].cells) actual.add(ci);
+    for (const oi of section.runs.slice(0, groupIndex).flat())
+      for (const ci of plan.ops[oi].cells) actual.add(ci);
   if ($('showFuture').checked) model.cells.forEach((b, i) => ref.add(i));
   for (const ci of actual) ref.delete(ci);
   for (const ci of current) ref.delete(ci);
@@ -656,7 +809,7 @@ function drawScene() {
     (b, i) => (current.has(i) || actual.has(i) || ref.has(i)) && b[1] <= Number($('cut').value),
   );
   const bounds = boxOf(
-    visible.length ? visible : t.ops.flatMap((i) => plan.ops[i].cells.map((ci) => model.cells[ci])),
+    visible.length ? visible : section.ops.flatMap((i) => plan.ops[i].cells.map((ci) => model.cells[ci])),
   );
   viewer.show(
     visible,
@@ -666,9 +819,8 @@ function drawScene() {
     focus[2] <= Number(settings.groundY) + 1 ? Number(settings.groundY) + 1 : undefined,
   );
   $('renderMode').textContent = viewer.renderer
-    ? '3D · 拖动旋转 / Shift平移'
-    : '二维备用 · 拖动转向 / Shift平移';
-  drawDimensions();
+    ? t('3D · 拖动旋转 / Shift平移')
+    : t('二维备用 · 拖动转向 / Shift平移');
 }
 function drawDimensions() {
   const c = $('dimensions'),
@@ -685,6 +837,7 @@ function drawDimensions() {
   const b = boxOf(bs),
     P = viewer.renderer?.project || viewer.project;
   if (!P) return;
+  const placedLabels = [];
   const line = (a, z, label) => {
     const A = P(...a),
       B = P(...z);
@@ -694,20 +847,30 @@ function drawDimensions() {
     ctx.moveTo(...A);
     ctx.lineTo(...B);
     ctx.stroke();
-    const x = (A[0] + B[0]) / 2,
+    let x = (A[0] + B[0]) / 2,
       y = (A[1] + B[1]) / 2;
     ctx.font = 'bold 12px Microsoft YaHei';
     const w = ctx.measureText(label).width;
+    x = Math.max(w / 2 + 5, Math.min(W - w / 2 - 5, x));
+    y = Math.max(13, Math.min(H - 15, y));
+    for (
+      let attempt = 0;
+      attempt < 5 &&
+      placedLabels.some((r) => Math.abs(r.x - x) < (r.w + w) / 2 + 8 && Math.abs(r.y - y) < 22);
+      attempt++
+    )
+      y = Math.max(13, Math.min(H - 15, y + (attempt % 2 ? -44 : 22)));
+    placedLabels.push({ x, y, w });
     ctx.fillStyle = '#fffefaee';
     ctx.fillRect(x - w / 2 - 4, y - 10, w + 8, 19);
     ctx.textAlign = 'center';
     ctx.fillStyle = '#294e43';
     ctx.fillText(label, x, y + 4);
   };
-  line([b[0], b[2] - 0.3, b[5] + 0.7], [b[1], b[2] - 0.3, b[5] + 0.7], b[1] - b[0] + '格');
-  line([b[1] + 0.7, b[2] - 0.3, b[4]], [b[1] + 0.7, b[2] - 0.3, b[5]], b[5] - b[4] + '格');
+  line([b[0], b[2] - 0.3, b[5] + 0.7], [b[1], b[2] - 0.3, b[5] + 0.7], unit(b[1] - b[0]));
+  line([b[1] + 0.7, b[2] - 0.3, b[4]], [b[1] + 0.7, b[2] - 0.3, b[5]], unit(b[5] - b[4]));
   if (b[3] - b[2] > 1)
-    line([b[1] + 0.5, b[2], b[5] + 0.5], [b[1] + 0.5, b[3], b[5] + 0.5], b[3] - b[2] + '层');
+    line([b[1] + 0.5, b[2], b[5] + 0.5], [b[1] + 0.5, b[3], b[5] + 0.5], unit(b[3] - b[2], 'layers'));
 }
 function drawMap() {
   if (!model) return;
@@ -784,14 +947,9 @@ $('map').onpointerup = (e) => {
   const p = mapPoint(e);
   if (p[0] === drag[0] && p[1] === drag[1]) {
     const b = mapFrame.lookup.get(p.join(','));
-    $('mapInfo').textContent =
-      '原图 x' +
-      p[0] +
-      ' / y' +
-      $('mapLayer').value +
-      ' / z' +
-      p[1] +
-      (b ? ' · ' + itemName(model.palette[b[3]].split('[')[0]) : ' · 空位，不放方块');
+    setMapMessage('原图 x{x} / y{y} / z{z}', { x: p[0], y: $('mapLayer').value, z: p[1] });
+    $('mapInfo').textContent +=
+      ' · ' + (b ? itemName(model.palette[b[3]].split('[')[0]) : t('空位，不放方块'));
     if (b) inspect(b);
   } else {
     for (const [id, i] of [
@@ -802,12 +960,10 @@ $('map').onpointerup = (e) => {
     ])
       $(id).value = mapSelection[i];
     $('regionsPanel').open = true;
-    $('mapInfo').textContent =
-      '已框选 ' +
-      (mapSelection[1] - mapSelection[0] + 1) +
-      ' × ' +
-      (mapSelection[3] - mapSelection[2] + 1) +
-      ' 格；填名称后新建分区。';
+    setMapMessage('已框选 {x} × {z} 格；填名称后新建分区。', {
+      x: mapSelection[1] - mapSelection[0] + 1,
+      z: mapSelection[3] - mapSelection[2] + 1,
+    });
   }
   drag = null;
 };
@@ -825,6 +981,7 @@ $('addRegion').onclick = guard(async () => {
     r = {
       id: crypto.randomUUID(),
       name: $('regionName').value.trim() || '部位 ' + (regions.length + 1),
+      autoNameIndex: $('regionName').value.trim() ? null : regions.length + 1,
       boxes: [box],
     };
   validateRegions([...regions, r], model);
@@ -835,40 +992,48 @@ $('addRegion').onclick = guard(async () => {
 });
 function renderRegions() {
   if (!model) return;
+  const nameOf = (r) => (r.autoNameIndex ? t('部位 {n}', { n: r.autoNameIndex }) : r.name);
   $('regionList').innerHTML =
     regions
       .map(
         (r, i) =>
           '<div class="region"><b>' +
-          esc(r.name) +
+          esc(nameOf(r)) +
           '</b><div class="regionActions"><button data-action="up" data-index="' +
           i +
           '" aria-label="' +
-          esc(r.name) +
-          '提前">↑</button><button data-action="down" data-index="' +
+          esc(t('{name}提前', { name: nameOf(r) })) +
+          '">↑</button><button data-action="down" data-index="' +
           i +
           '" aria-label="' +
-          esc(r.name) +
-          '延后">↓</button><button data-action="rename" data-index="' +
+          esc(t('{name}延后', { name: nameOf(r) })) +
+          '">↓</button><button data-action="rename" data-index="' +
           i +
-          '">改名</button><button data-action="merge" data-index="' +
+          '">' +
+          esc(t('改名')) +
+          '</button><button data-action="merge" data-index="' +
           i +
           '" ' +
           (i === 0 ? 'disabled' : '') +
-          '>并入上区</button><button data-action="remove" data-index="' +
+          '>' +
+          esc(t('并入上区')) +
+          '</button><button data-action="remove" data-index="' +
           i +
-          '">移除分区</button></div></div>',
+          '">' +
+          esc(t('移除分区')) +
+          '</button></div></div>',
       )
-      .join('') || '<p class="muted">尚未划分部位，先按整座建筑的高度递进。</p>';
+      .join('') || '<p class="muted">' + esc(t('尚未划分部位，先按整座建筑的高度递进。')) + '</p>';
   for (const el of $('regionList').querySelectorAll('[data-action]'))
     el.onclick = guard(async () => {
       const i = Number(el.dataset.index),
         action = el.dataset.action;
       if (action === 'remove') regions.splice(i, 1);
       if (action === 'rename') {
-        const value = prompt('分区名称', regions[i].name);
+        const value = prompt(t('分区名称'), nameOf(regions[i]));
         if (value === null) return;
         regions[i].name = value.trim().slice(0, 80) || regions[i].name;
+        delete regions[i].autoNameIndex;
       }
       if (action === 'up' && i > 0) [regions[i - 1], regions[i]] = [regions[i], regions[i - 1]];
       if (action === 'down' && i < regions.length - 1)
@@ -884,13 +1049,13 @@ function renderRegions() {
 function csv(items) {
   return (
     '\ufeff' +
-    [['物品ID', '物品', '数量'], ...Object.entries(items).map(([id, n]) => [id, itemName(id), n])]
+    [[t('物品ID'), t('物品'), t('数量')], ...Object.entries(items).map(([id, n]) => [id, itemName(id), n])]
       .map((row) => row.map((v) => '"' + String(v).replaceAll('"', '""') + '"').join(','))
       .join('\r\n')
   );
 }
 $('exportMaterials').onclick = () =>
-  model && download(model.name + '-材料.csv', csv(plan.items), 'text/csv;charset=utf-8');
+  model && download(modelName() + '-' + t('材料') + '.csv', csv(plan.items), 'text/csv;charset=utf-8');
 function preparePrint() {
   if (!model) return;
   const scene = $('scene'),
@@ -901,20 +1066,24 @@ function preparePrint() {
   g.drawImage(scene, 0, 0);
   g.drawImage($('dimensions'), 0, 0, scene.width, scene.height);
   $('printArea').innerHTML =
-    '<p>方块工坊 · ' +
-    esc(model.name) +
+    '<p>' +
+    esc(t('方块工坊')) +
+    ' · ' +
+    esc(modelName()) +
     '</p><h1>' +
-    esc(task().title) +
+    esc(lessonTitle(task())) +
     '</h1><img src="' +
     c.toDataURL() +
-    '" alt="当前施工模型与尺寸"><p>' +
+    '" alt="' +
+    esc(t('当前施工模型与尺寸')) +
+    '"><p>' +
     esc($('rangeText').textContent) +
     '</p><p>' +
     esc($('groundText').textContent) +
     '</p>' +
     table(sumItems(activeOps().map((i) => plan.ops[i]))) +
     '<p>' +
-    esc(task().warnings.join('；')) +
+    esc(task().warnings.map(message).join('; ')) +
     '</p>';
 }
 window.addEventListener('beforeprint', preparePrint);
@@ -939,8 +1108,12 @@ $('exportHTML').onclick = guard(async () => {
   clone.querySelector('#printArea').replaceChildren();
   clone.querySelector('#scene').parentElement.classList.remove('expanded');
   clone.querySelector('#busy').hidden = true;
-  clone.querySelector('#status').textContent = '正在恢复离线项目…';
-  download(model.name + '-离线教学.html', '<!doctype html>\n' + clone.outerHTML, 'text/html;charset=utf-8');
+  clone.querySelector('#status').textContent = t('正在恢复离线项目…');
+  download(
+    modelName() + '-' + t('离线教学') + '.html',
+    '<!doctype html>\n' + clone.outerHTML,
+    'text/html;charset=utf-8',
+  );
   say('已导出含图纸、当前材质和进度的离线网页。');
 });
 let resize;
@@ -965,7 +1138,7 @@ async function init() {
     } else say('导入本地 .schem v3，或先体验自制示例。');
     window.__teacher.ready = true;
   } catch (e) {
-    say('加载失败：' + e.message, true);
+    say('加载失败：{error}', true, { error: e.message });
   }
 }
 window.__teacher = {
@@ -977,4 +1150,10 @@ window.__teacher = {
   replan,
   viewer: () => viewer,
 };
+$('language').onchange = () => {
+  setLocale($('language').value);
+  stop();
+  refreshLanguage();
+};
+refreshLanguage();
 init();

@@ -4,7 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#235d50" />
-    <meta name="description" content="本地导入Minecraft图纸，编排施工步骤，导出离线教学网页。" />
+    <meta
+      name="description"
+      content="本地导入Minecraft图纸，编排施工步骤，导出离线教学网页。"
+      data-i18n-content="本地导入Minecraft图纸，编排施工步骤，导出离线教学网页。"
+    />
     <title>方块工坊 · 图纸教学生成器</title>
     <style>
       /* STYLES */
@@ -14,42 +18,77 @@
     <header>
       <a class="brand" href="#"
         ><span class="brandmark" aria-hidden="true">▦</span
-        ><span>方块工坊<small>SCHEM TEACHER / 0.1</small></span></a
+        ><span><span data-i18n="方块工坊">方块工坊</span><small>SCHEM TEACHER / 0.2</small></span></a
       >
-      <nav aria-label="项目操作">
-        <button id="openFile">导入图纸</button><button id="projectOpen">打开项目</button
-        ><button id="saveProject">保存项目</button
-        ><button id="exportHTML" class="primary">导出离线网页 ↗</button
-        ><button id="printButton">打印</button>
+      <label class="languageSwitch"
+        ><span><span data-i18n="界面语言">界面语言</span></span
+        ><select id="language" aria-label="界面语言" data-i18n-aria-label="界面语言">
+          <option value="zh" data-i18n="中文">中文</option>
+          <option value="en">English</option>
+        </select></label
+      >
+      <nav aria-label="项目操作" data-i18n-aria-label="项目操作">
+        <button id="openFile"><span data-i18n="导入图纸">导入图纸</span></button
+        ><button id="projectOpen"><span data-i18n="打开项目">打开项目</span></button
+        ><button id="saveProject"><span data-i18n="保存项目">保存项目</span></button
+        ><button id="exportHTML" class="primary">
+          <span data-i18n="导出离线网页 ↗">导出离线网页 ↗</span></button
+        ><button id="printButton"><span data-i18n="打印">打印</span></button>
       </nav>
     </header>
-    <div id="status" role="status" aria-live="polite">正在准备本地工具…</div>
-    <div id="busy" hidden><span id="busyText">正在读取…</span><button id="cancelJob">取消</button></div>
+    <div id="status" role="status" aria-live="polite">
+      <span data-i18n="正在准备本地工具…">正在准备本地工具…</span>
+    </div>
+    <div id="busy" hidden>
+      <span id="busyText"><span data-i18n="正在读取…">正在读取…</span></span
+      ><button id="cancelJob"><span data-i18n="取消">取消</span></button>
+    </div>
     <main>
       <section id="welcome" class="welcome">
         <div>
-          <div class="eyebrow">从一份图纸，开始一起建造</div>
-          <h1>把建筑图纸<br />变成看得懂的施工课。</h1>
-          <p>读取真实方块，分段搭建、数清格子。<br />图纸在你的浏览器里处理，生成的教学页可以离线带走。</p>
-          <div class="welcomeActions">
-            <button id="welcomeFile" class="primary large">选择 .schem 图纸</button
-            ><button id="demoHouse">体验小屋示例</button><button id="demoTower">塔楼示例</button
-            ><button id="demoBasement">地下室示例</button>
+          <div class="eyebrow">
+            <span data-i18n="从一份图纸，开始一起建造">从一份图纸，开始一起建造</span>
           </div>
-          <small>首版支持 Sponge .schem v3 · 无需登录 · 文件不会上传</small>
+          <h1>
+            <span data-i18n="把建筑图纸">把建筑图纸</span><br /><span data-i18n="变成看得懂的施工课。"
+              >变成看得懂的施工课。</span
+            >
+          </h1>
+          <p>
+            <span data-i18n="读取真实方块，分段搭建、数清格子。">读取真实方块，分段搭建、数清格子。</span
+            ><br /><span data-i18n="图纸在你的浏览器里处理，生成的教学页可以离线带走。"
+              >图纸在你的浏览器里处理，生成的教学页可以离线带走。</span
+            >
+          </p>
+          <div class="welcomeActions">
+            <button id="welcomeFile" class="primary large">
+              <span data-i18n="选择 .schem 图纸">选择 .schem 图纸</span></button
+            ><button id="demoHouse"><span data-i18n="体验小屋示例">体验小屋示例</span></button
+            ><button id="demoTower"><span data-i18n="塔楼示例">塔楼示例</span></button
+            ><button id="demoBasement"><span data-i18n="地下室示例">地下室示例</span></button>
+          </div>
+          <small
+            ><span data-i18n="首版支持 Sponge .schem v3 · 无需登录 · 文件不会上传"
+              >首版支持 Sponge .schem v3 · 无需登录 · 文件不会上传</span
+            ></small
+          >
         </div>
         <div class="blueprintArt" aria-hidden="true">
           <div class="miniBlock one"></div>
           <div class="miniBlock two"></div>
           <div class="miniBlock three"></div>
-          <div class="sketchLabel">先主体，后细节<br /><b>一组一组建起来。</b></div>
+          <div class="sketchLabel">
+            <span data-i18n="先主体，后细节">先主体，后细节</span><br /><b
+              ><span data-i18n="一组一组建起来。">一组一组建起来。</span></b
+            >
+          </div>
           <span class="measureArt">13 × 11</span>
         </div>
       </section>
       <section id="workspace" hidden>
         <div class="projectLine">
           <div>
-            <p class="eyebrow">当前图纸</p>
+            <p class="eyebrow"><span data-i18n="当前图纸">当前图纸</span></p>
             <h1 id="projectTitle"></h1>
             <p id="modelMeta" class="muted"></p>
           </div>
@@ -62,30 +101,40 @@
         <div class="layout">
           <aside class="panel directory">
             <div class="sectionTitle">
-              <h2>施工目录</h2>
+              <h2><span data-i18n="施工目录">施工目录</span></h2>
               <span id="taskTotal"></span>
             </div>
             <div class="planning">
               <label
-                >施工策略<select id="strategy">
-                  <option value="shell">先主体，后细节</option>
-                  <option value="layers">按原图高度递进</option>
+                ><span data-i18n="施工策略">施工策略</span
+                ><select id="strategy">
+                  <option value="shell" data-i18n="先主体，后细节">先主体，后细节</option>
+                  <option value="layers" data-i18n="按原图高度递进">按原图高度递进</option>
                 </select></label
               ><label
-                >合并高度<select id="band">
-                  <option value="1">每层单独</option>
-                  <option value="2">最多2层</option>
-                  <option value="3" selected>最多3层</option>
-                  <option value="4">最多4层</option>
-                  <option value="6">最多6层</option>
+                ><span data-i18n="合并高度">合并高度</span
+                ><select id="band">
+                  <option value="1" data-i18n="每层单独">每层单独</option>
+                  <option value="2" data-i18n="最多2层">最多2层</option>
+                  <option value="3" selected data-i18n="最多3层">最多3层</option>
+                  <option value="4" data-i18n="最多4层">最多4层</option>
+                  <option value="6" data-i18n="最多6层">最多6层</option>
                 </select></label
-              ><label class="check"><input id="deferBasement" type="checkbox" /> 地下部分后建</label>
+              ><label class="check"
+                ><input id="deferBasement" type="checkbox" /><span data-i18n="地下部分后建">
+                  地下部分后建</span
+                ></label
+              >
             </div>
             <div id="taskList"></div>
             <details>
-              <summary>分区和施工规则</summary>
+              <summary><span data-i18n="分区和施工规则">分区和施工规则</span></summary>
               <p>
-                先按高度与方块用途初分；你可以在俯视图框选、命名部位，再调整顺序。石砖和苔石砖可合成同一墙面，每格仍保留原材质。外接尺寸含空位，不能把整个范围填满。
+                <span
+                  data-i18n="先按高度与方块用途初分；你可以在俯视图框选、命名部位，再调整顺序。石砖和苔石砖可合成同一墙面，每格仍保留原材质。外接尺寸含空位，不能把整个范围填满。"
+                >
+                  先按高度与方块用途初分；你可以在俯视图框选、命名部位，再调整顺序。石砖和苔石砖可合成同一墙面，每格仍保留原材质。外接尺寸含空位，不能把整个范围填满。
+                </span>
               </p>
             </details>
           </aside>
@@ -96,44 +145,65 @@
                 <h2 id="taskTitle"></h2>
               </div>
               <div class="smallNav">
-                <button id="prevTask" aria-label="上一施工段">←</button><span id="taskPosition"></span
-                ><button id="nextTask" aria-label="下一施工段">→</button>
+                <button id="prevTask" aria-label="上一施工段" data-i18n-aria-label="上一施工段">←</button
+                ><span id="taskPosition"></span
+                ><button id="nextTask" aria-label="下一施工段" data-i18n-aria-label="下一施工段">→</button>
               </div>
             </div>
             <div class="sceneBox">
-              <canvas id="scene" aria-label="施工模型，拖动旋转，Shift拖动平移，滚轮缩放"></canvas
+              <canvas
+                id="scene"
+                aria-label="施工模型，拖动旋转，Shift拖动平移，滚轮缩放"
+                data-i18n-aria-label="施工模型，拖动旋转，Shift拖动平移，滚轮缩放"
+              ></canvas
               ><canvas id="dimensions" aria-hidden="true"></canvas>
               <div class="sceneControls">
-                <button id="zoomOut" aria-label="缩小">−</button
-                ><button id="zoomIn" aria-label="放大">＋</button><button id="fitView">复位</button
-                ><button id="expandView" aria-label="展开模型">⤢</button>
+                <button id="zoomOut" aria-label="缩小" data-i18n-aria-label="缩小">−</button
+                ><button id="zoomIn" aria-label="放大" data-i18n-aria-label="放大">＋</button
+                ><button id="fitView"><span data-i18n="复位">复位</span></button
+                ><button id="expandView" aria-label="展开模型" data-i18n-aria-label="展开模型">⤢</button>
               </div>
               <span id="renderMode" class="renderMode"></span>
             </div>
             <div class="viewToolbar">
               <label
-                >剖切 <input id="cut" type="range" min="0" max="1" value="1" /><output
+                ><span data-i18n="剖切">剖切 </span
+                ><input id="cut" type="range" min="0" max="1" value="1" /><output
                   id="cutValue"
                 ></output></label
               ><label
-                >查看<select id="granularity">
-                  <option value="package">整段施工</option>
-                  <option value="group">本段逐组</option>
+                ><span data-i18n="查看">查看</span
+                ><select id="granularity">
+                  <option value="package" data-i18n="整段施工">整段施工</option>
+                  <option value="group" data-i18n="本段逐组">本段逐组</option>
                 </select></label
-              ><button id="playPreview">预演 ▶</button><button id="importResources">导入原版材质</button>
+              ><button id="playPreview"><span data-i18n="预演 ▶">预演 ▶</span></button
+              ><button id="importResources"><span data-i18n="导入原版材质">导入原版材质</span></button>
             </div>
             <div id="groupControls" hidden>
-              <button id="prevGroup">上组</button
-              ><input id="groupSeek" type="range" min="0" max="0" value="0" aria-label="本段施工组" /><span
-                id="groupPosition"
-              ></span
-              ><button id="nextGroup">下组</button>
+              <button id="prevGroup"><span data-i18n="上组">上组</span></button
+              ><input
+                id="groupSeek"
+                type="range"
+                min="0"
+                max="0"
+                value="0"
+                aria-label="本段施工组"
+                data-i18n-aria-label="本段施工组"
+              /><span id="groupPosition"></span
+              ><button id="nextGroup"><span data-i18n="下组">下组</span></button>
             </div>
             <div class="legend">
-              <span><i class="solid"></i>实体：已确认</span><span><i class="target"></i>金边：待建</span
-              ><span><i class="ghost"></i>虚影：前置参考</span
-              ><label><input id="showReferences" type="checkbox" checked /> 前置参考</label
-              ><label><input id="showFuture" type="checkbox" /> 完整目标</label>
+              <span><i class="solid"></i><span data-i18n="实体：已确认">实体：已确认</span></span
+              ><span><i class="target"></i><span data-i18n="金边：待建">金边：待建</span></span
+              ><span><i class="ghost"></i><span data-i18n="虚影：前置参考">虚影：前置参考</span></span
+              ><label
+                ><input id="showReferences" type="checkbox" checked /><span data-i18n="前置参考">
+                  前置参考</span
+                ></label
+              ><label
+                ><input id="showFuture" type="checkbox" /><span data-i18n="完整目标"> 完整目标</span></label
+              >
             </div>
             <p id="rangeText" class="muted"></p>
             <p id="groundText" class="muted"></p>
@@ -143,89 +213,132 @@
             <div class="completion">
               <span id="pendingText"></span>
               <div>
-                <button id="undo">撤回</button><button id="complete" class="primary">登记本段完成 →</button>
+                <button id="undo"><span data-i18n="撤回">撤回</span></button
+                ><button id="complete" class="primary">
+                  <span data-i18n="登记本段完成 →">登记本段完成 →</span>
+                </button>
               </div>
             </div>
           </section>
           <aside class="panel rightPanel">
             <div class="sectionTitle">
-              <h2>定位与数格</h2>
-              <select id="mapLayer" aria-label="俯视施工层"></select>
+              <h2><span data-i18n="定位与数格">定位与数格</span></h2>
+              <select id="mapLayer" aria-label="俯视施工层" data-i18n-aria-label="俯视施工层"></select>
             </div>
-            <canvas id="map" aria-label="俯视图，点击选格或拖动框选分区"></canvas>
-            <p id="mapInfo" class="muted">点击查格子；拖动框选一个建筑部位。</p>
-            <h3>本次材料 <button id="exportMaterials" class="textButton">CSV ↗</button></h3>
+            <canvas
+              id="map"
+              aria-label="俯视图，点击选格或拖动框选分区"
+              data-i18n-aria-label="俯视图，点击选格或拖动框选分区"
+            ></canvas>
+            <p id="mapInfo" class="muted">
+              <span data-i18n="点击查格子；拖动框选一个建筑部位。">点击查格子；拖动框选一个建筑部位。</span>
+            </p>
+            <h3>
+              <span data-i18n="本次材料">本次材料 </span
+              ><button id="exportMaterials" class="textButton">CSV ↗</button>
+            </h3>
             <div id="materials"></div>
             <details id="regionsPanel" open>
-              <summary>建筑分区</summary>
+              <summary><span data-i18n="建筑分区">建筑分区</span></summary>
               <div id="regionList"></div>
               <div class="regionBox">
                 <div class="boundsGrid">
-                  <label>X起<input id="boxX0" type="number" value="0" /></label
-                  ><label>X止<input id="boxX1" type="number" value="0" /></label
-                  ><label>Z起<input id="boxZ0" type="number" value="0" /></label
-                  ><label>Z止<input id="boxZ1" type="number" value="0" /></label
-                  ><label>Y起<input id="boxY0" type="number" value="0" /></label
-                  ><label>Y止<input id="boxY1" type="number" value="0" /></label>
+                  <label><span data-i18n="X起">X起</span><input id="boxX0" type="number" value="0" /></label
+                  ><label><span data-i18n="X止">X止</span><input id="boxX1" type="number" value="0" /></label
+                  ><label><span data-i18n="Z起">Z起</span><input id="boxZ0" type="number" value="0" /></label
+                  ><label><span data-i18n="Z止">Z止</span><input id="boxZ1" type="number" value="0" /></label
+                  ><label><span data-i18n="Y起">Y起</span><input id="boxY0" type="number" value="0" /></label
+                  ><label><span data-i18n="Y止">Y止</span><input id="boxY1" type="number" value="0" /></label>
                 </div>
                 <input
                   id="regionName"
                   aria-label="新分区名称"
                   placeholder="例如：左塔、外墙、主屋"
                   maxlength="80"
-                /><button id="addRegion">新建分区</button>
+                  data-i18n-aria-label="新分区名称"
+                  data-i18n-placeholder="例如：左塔、外墙、主屋"
+                /><button id="addRegion"><span data-i18n="新建分区">新建分区</span></button>
               </div>
-              <p class="muted">范围含首尾；后创建的分区拥有重叠方块，其他部分自动保留。</p>
+              <p class="muted">
+                <span data-i18n="范围含首尾；后创建的分区拥有重叠方块，其他部分自动保留。"
+                  >范围含首尾；后创建的分区拥有重叠方块，其他部分自动保留。</span
+                >
+              </p>
             </details>
           </aside>
         </div>
         <details class="projectSettings" id="settingsPanel">
-          <summary>地面与游戏坐标</summary>
+          <summary><span data-i18n="地面与游戏坐标">地面与游戏坐标</span></summary>
           <div class="settingsGrid">
-            <label>原图地面方块Y<input id="groundY" type="number" /></label
-            ><label>原图基准X<input id="sourceX" type="number" value="0" /></label
-            ><label>原图基准Z<input id="sourceZ" type="number" value="0" /></label
-            ><label>对应游戏方块X<input id="worldX" type="number" /></label
-            ><label>对应游戏地面方块Y<input id="worldY" type="number" /></label
-            ><label>对应游戏方块Z<input id="worldZ" type="number" /></label
+            <label
+              ><span data-i18n="原图地面方块Y">原图地面方块Y</span><input id="groundY" type="number" /></label
             ><label
-              >原图+X对应<select id="rotation">
-                <option value="0">东 +X</option>
-                <option value="1">南 +Z</option>
-                <option value="2">西 −X</option>
-                <option value="3">北 −Z</option>
+              ><span data-i18n="原图基准X">原图基准X</span
+              ><input id="sourceX" type="number" value="0" /></label
+            ><label
+              ><span data-i18n="原图基准Z">原图基准Z</span
+              ><input id="sourceZ" type="number" value="0" /></label
+            ><label
+              ><span data-i18n="对应游戏方块X">对应游戏方块X</span><input id="worldX" type="number" /></label
+            ><label
+              ><span data-i18n="对应游戏地面方块Y">对应游戏地面方块Y</span
+              ><input id="worldY" type="number" /></label
+            ><label
+              ><span data-i18n="对应游戏方块Z">对应游戏方块Z</span><input id="worldZ" type="number" /></label
+            ><label
+              ><span data-i18n="原图+X对应">原图+X对应</span
+              ><select id="rotation">
+                <option value="0" data-i18n="东 +X">东 +X</option>
+                <option value="1" data-i18n="南 +Z">南 +Z</option>
+                <option value="2" data-i18n="西 −X">西 −X</option>
+                <option value="3" data-i18n="北 −Z">北 −Z</option>
               </select></label
             >
           </div>
           <p class="muted">
-            游戏Y填脚下地面方块的坐标；若读取站立时F3脚部Y，减1后填写。也可点击模型中的路面方块设为地面基准。偏移量保留在图纸信息中，页面坐标使用从0开始的原图格。
+            <span
+              data-i18n="游戏Y填脚下地面方块的坐标；若读取站立时F3脚部Y，减1后填写。也可点击模型中的路面方块设为地面基准。偏移量保留在图纸信息中，页面坐标使用从0开始的原图格。"
+            >
+              游戏Y填脚下地面方块的坐标；若读取站立时F3脚部Y，减1后填写。也可点击模型中的路面方块设为地面基准。偏移量保留在图纸信息中，页面坐标使用从0开始的原图格。
+            </span>
           </p>
-          <button id="groundFromPick" disabled>用所选方块设定地面基准</button>
+          <button id="groundFromPick" disabled>
+            <span data-i18n="用所选方块设定地面基准">用所选方块设定地面基准</span>
+          </button>
         </details>
       </section>
       <section id="printArea" class="printOnly"></section>
     </main>
     <footer>
-      <span>方块工坊 · 本地处理，离线带走</span
+      <span><span data-i18n="方块工坊 · 本地处理，离线带走">方块工坊 · 本地处理，离线带走</span></span
       ><span
-        >非官方 Minecraft 工具 ·
-        <a id="sourceLink" href="https://github.com/Zhan27/schem-teacher" target="_blank" rel="noreferrer"
-          >开源代码 ↗</a
+        ><span data-i18n="非官方 Minecraft 工具 ·">非官方 Minecraft 工具 · </span
+        ><a id="sourceLink" href="https://github.com/Zhan27/schem-teacher" target="_blank" rel="noreferrer"
+          ><span data-i18n="开源代码 ↗">开源代码 ↗</span></a
         ></span
       >
     </footer>
-    <input id="schemFile" type="file" accept=".schem" hidden aria-label="选择schem图纸" /><input
+    <input
+      id="schemFile"
+      type="file"
+      accept=".schem"
+      hidden
+      aria-label="选择schem图纸"
+      data-i18n-aria-label="选择schem图纸"
+    /><input
       id="projectFile"
       type="file"
       accept=".json"
       hidden
       aria-label="选择教学项目"
+      data-i18n-aria-label="选择教学项目"
     /><input
       id="resourcesFile"
       type="file"
       accept=".jar,.zip"
       hidden
       aria-label="选择本机Java客户端或资源包"
+      data-i18n-aria-label="选择本机Java客户端或资源包"
     />
     <script id="projectData" type="application/octet-stream"></script>
     <script id="appSource" type="text/plain">

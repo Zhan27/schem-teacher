@@ -106,13 +106,11 @@ test('no WebGL fallback and invalid imports do not blank the application', async
   ).toBeGreaterThan(0);
   expect(await page.evaluate(() => window.__attempts)).toBe(1);
   const prior = await page.locator('#projectTitle').textContent();
-  await page
-    .locator('#schemFile')
-    .setInputFiles({
-      name: 'bad.schem',
-      mimeType: 'application/octet-stream',
-      buffer: Buffer.from('not nbt'),
-    });
+  await page.locator('#schemFile').setInputFiles({
+    name: 'bad.schem',
+    mimeType: 'application/octet-stream',
+    buffer: Buffer.from('not nbt'),
+  });
   await expect(page.locator('#status')).toContainText(/NBT|文件/);
   expect(await page.locator('#projectTitle').textContent()).toBe(prior);
   expect(errors).toEqual([]);
