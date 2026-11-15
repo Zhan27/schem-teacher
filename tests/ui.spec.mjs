@@ -116,7 +116,7 @@ test('no WebGL fallback and invalid imports do not blank the application', async
   expect(errors).toEqual([]);
   await page.screenshot({ path: info.outputPath('fallback.png') });
 });
-test('local resource archive produces authentic model textures and exports them', async ({
+test('texture-only resource pack inherits vanilla models, exports and restores defaults', async ({
   page,
   browser,
 }, info) => {
@@ -132,32 +132,13 @@ test('local resource archive produces authentic model textures and exports them'
     g.fillRect(0, 0, 16, 16);
     return c.toDataURL().split(',')[1];
   });
-  const json = (v) => new TextEncoder().encode(JSON.stringify(v));
   const pack = zipSync({
-    'assets/minecraft/blockstates/stone_bricks.json': json({
-      variants: { '': { model: 'minecraft:block/green' } },
-    }),
-    'assets/minecraft/models/block/green.json': json({
-      textures: { all: 'minecraft:block/green' },
-      elements: [
-        {
-          from: [0, 0, 0],
-          to: [16, 16, 16],
-          faces: Object.fromEntries(
-            ['up', 'down', 'north', 'south', 'east', 'west'].map((d) => [
-              d,
-              { texture: '#all', cullface: d },
-            ]),
-          ),
-        },
-      ],
-    }),
-    'assets/minecraft/textures/block/green.png': new Uint8Array(Buffer.from(png, 'base64')),
+    'assets/minecraft/textures/block/stone_bricks.png': new Uint8Array(Buffer.from(png, 'base64')),
   });
   await page
     .locator('#resourcesFile')
     .setInputFiles({ name: 'test-resource.zip', mimeType: 'application/zip', buffer: Buffer.from(pack) });
-  await expect(page.locator('#textureNote')).toContainText('本机导入的原版材质');
+  await expect(page.locator('#textureNote')).toContainText('自定义材质 · 原版资源补齐');
   const pending = page.waitForEvent('download');
   await page.locator('#exportHTML').click();
   const file = await pending,
@@ -167,6 +148,30 @@ test('local resource archive produces authentic model textures and exports them'
     p = await context.newPage();
   await p.goto(pathToFileURL(output).href);
   await ready(p);
-  await expect(p.locator('#textureNote')).toContainText('本机导入');
+  await expect(p.locator('#textureNote')).toContainText('自定义材质');
+  const saving = p.waitForEvent('download');
+  await p.locator('#saveProject').click();
+  const saved = await saving,
+    jsonFile = info.outputPath('custom.json');
+  await saved.saveAs(jsonFile);
+  const project = JSON.parse(await fs.readFile(jsonFile, 'utf8'));
+  expect(project.assets.source).toBe('custom');
+  const raw = project.assets.textures.find(([id]) => id === 'minecraft:block/stone_bricks')[1];
+  expect(
+    await p.evaluate(async (url) => {
+      const im = new Image();
+      im.src = url;
+      await im.decode();
+      const c = document.createElement('canvas');
+      c.width = c.height = 16;
+      const g = c.getContext('2d');
+      g.drawImage(im, 0, 0);
+      return [...g.getImageData(0, 0, 1, 1).data];
+    }, raw),
+  ).toEqual([119, 170, 119, 255]);
+  const pose = await p.evaluate(() => window.__teacher.viewer().getPose());
+  await p.locator('#resetResources').click();
+  await expect(p.locator('#textureNote')).toContainText('内置原版材质');
+  expect(await p.evaluate(() => window.__teacher.viewer().getPose())).toEqual(pose);
   await context.close();
 });

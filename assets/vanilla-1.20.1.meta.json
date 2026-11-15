@@ -1,0 +1,15 @@
+{
+  "version": "1.20.1",
+  "source": "Minecraft: Java Edition client, block rendering resources only",
+  "copyright": "Minecraft assets are copyright Mojang Studios / Microsoft. Not covered by the project MIT license.",
+  "sourceClientSHA256": "56b71336d2b4fdffd197f56595b0da93e32a946f78f382a299b8f4b92758bb0f",
+  "packedSHA256": "bc31111e6af31e6a44ff8fc2d252cf87b5775f5df98946c39ed14a37e0fcf548",
+  "fileCount": 3949,
+  "unpackedBytes": 1880458,
+  "samples": {
+    "assets/minecraft/textures/block/stone_bricks.png": "3509bac331d1079a08a60082502f0cc9ccce1953dcea8dfc404501d31f9f0be2",
+    "assets/minecraft/textures/block/deepslate_tiles.png": "7d22c4cd59ef94dbf299b7d62fecf962e8f0c107df11604c68d8c95b2c731b7e",
+    "assets/minecraft/models/block/ladder.json": "7912d9b19b3d97f1d6b0ef7f036cf13c97d8a93ea32fdf07a77217bfa296b293",
+    "assets/minecraft/blockstates/stone_brick_stairs.json": "effb2d6acdd74ef663fb34f1638763fdce3961eaf00be59936e76fef8b615011"
+  }
+}

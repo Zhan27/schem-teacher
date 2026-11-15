@@ -12,7 +12,8 @@ import {
   decode,
 } from './planner.js';
 import { demoSchematic } from './demo.js';
-import { defaultMaterials, importMaterials, packMaterials, unpackMaterials } from './materials.js';
+import { packMaterials, unpackMaterials } from './materials.js';
+import { vanillaMaterials, customMaterials } from './vanilla.js';
 import { Viewer } from './viewer.js';
 const $ = (id) => document.getElementById(id),
   esc = (v) =>
@@ -326,7 +327,7 @@ async function acceptModel(m, snapshot) {
       candidate = readProgress(m);
       localWarning = true;
     }
-  const nextMaterials = snapshot?.assets ? await unpackMaterials(snapshot.assets) : defaultMaterials(m);
+  const nextMaterials = snapshot?.assets ? await unpackMaterials(snapshot.assets) : await vanillaMaterials(m);
   const nextPlan = await job({
     type: 'plan',
     model: m,
@@ -453,10 +454,19 @@ $('resourcesFile').onchange = guard(async () => {
   $('busyText').textContent = t('处理方块模型与材质…');
   let next;
   try {
-    next = await importMaterials(model, files);
+    next = await customMaterials(model, files);
   } finally {
     $('busy').hidden = true;
   }
+  replaceMaterials(next);
+  say('自定义材质已载入，缺失资源由内置原版补齐。');
+});
+$('resetResources').onclick = guard(async () => {
+  if (!model) return;
+  replaceMaterials(await vanillaMaterials(model));
+  say('已恢复内置原版材质。');
+});
+function replaceMaterials(next) {
   materials = next;
   const pose = viewer.getPose();
   viewer.dispose();
@@ -469,8 +479,7 @@ $('resourcesFile').onchange = guard(async () => {
   update();
   viewer.setPose(pose);
   drawScene();
-  say('本机材质已载入；{n}种状态仍使用示意模型。', false, { n: materials.missing.length });
-});
+}
 function switchTask(i) {
   stop();
   taskIndex = Math.max(0, Math.min(plan.tasks.length - 1, i));
@@ -754,9 +763,12 @@ function update() {
       block: settings.groundY,
       surface: Number(settings.groundY) + 1,
     }) + (playing ? ' ' + t('正在预演，不登记实际完成。') : '');
-  $('textureNote').textContent = materials.authentic
-    ? t('本机导入的原版材质；{n}种方块使用示意模型。', { n: materials.missing.length })
-    : t('自制示意材质。导入本机客户端.jar或资源包.zip，可使用原始纹理与模型。');
+  $('textureNote').textContent =
+    (materials.source === 'vanilla'
+      ? t('内置原版材质 · Java {version}', { version: materials.version })
+      : t('自定义材质 · 原版资源补齐')) +
+    (materials.missing.length ? ' · ' + t('{n}种方块使用示意模型', { n: materials.missing.length }) : '');
+  $('resetResources').hidden = materials.source === 'vanilla';
   $('textureNote').title = materials.missing?.join(', ') || '';
   $('warnings').hidden = !section.warnings.length;
   $('warnings').textContent = section.warnings.slice(0, 3).map(message).join('; ');

@@ -99,7 +99,10 @@ export class BlueprintRenderer {
     this.atlasPixels = g.getImageData(0, 0, this.atlasSize, this.atlasSize);
     const tx = new THREE.CanvasTexture(atlas);
     tx.magFilter = THREE.NearestFilter;
-    tx.minFilter = THREE.NearestMipmapLinearFilter;
+    // Mip levels blend neighbouring atlas tiles when the castle is zoomed out.
+    // Keep the source's pixel colours instead of bleeding wood into stone roofs.
+    tx.minFilter = THREE.NearestFilter;
+    tx.generateMipmaps = false;
     tx.colorSpace = THREE.SRGBColorSpace;
     this.atlas = tx;
     this.referenceMaskMaterial.uniforms.atlas.value = tx;

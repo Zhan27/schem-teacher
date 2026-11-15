@@ -19,11 +19,13 @@ const app = await build({
   format: 'iife',
   target: 'es2022',
   define: { WORKER_SOURCE: JSON.stringify(worker.outputFiles[0].text) },
+  loader: { '.gz': 'base64' },
 });
 const styles = await fs.readFile('src/style.css', 'utf8');
 let html = await fs.readFile('src/index.html', 'utf8');
 const licenses = [
   await fs.readFile('LICENSE', 'utf8'),
+  await fs.readFile('assets/NOTICE.md', 'utf8'),
   ...(await Promise.all(
     ['three', 'fflate'].map((n) => fs.readFile('node_modules/' + n + '/LICENSE', 'utf8')),
   )),

@@ -300,6 +300,8 @@ export function packMaterials(materials) {
   return {
     models: materials.models,
     missing: materials.missing,
+    source: materials.source || 'custom',
+    version: materials.version || null,
     textures: [...materials.textures].map(([id, raw]) => {
       const c = document.createElement('canvas');
       c.width = c.height = 16;
@@ -320,5 +322,12 @@ export async function unpackMaterials(data) {
     c.getContext('2d').drawImage(image, 0, 0, 16, 16);
     textures.set(id, c.getContext('2d').getImageData(0, 0, 16, 16));
   }
-  return { models: data.models, textures, authentic: true, missing: data.missing || [] };
+  return {
+    models: data.models,
+    textures,
+    authentic: true,
+    missing: data.missing || [],
+    source: data.source === 'vanilla' ? 'vanilla' : 'custom',
+    version: data.version || null,
+  };
 }

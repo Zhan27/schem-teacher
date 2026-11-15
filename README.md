@@ -15,7 +15,7 @@
 - 先主体后细节，或按高度递进；将相同材质连续长方体合成施工组，石砖/苔石砖可一起分组而保留每格原材质。
 - 在俯视图框选建筑部位，命名、合并、移动施工顺序；重叠区域每个目标格仍只归属一次。
 - WebGL 模型、缩放、旋转、剖切、格数与当前目标金边；无 WebGL 自动切二维备用视图。
-- 从使用者本机客户端 `.jar` 或 Java 资源包 `.zip` 读取原始方块纹理/模型。默认材质由本项目自行绘制。
+- **默认内置 Java 1.20.1 原版方块纹理与模型**，导入图纸即可显示，无需添加资源包、联网或安装游戏。可选 `.jar` / `.zip` 自定义材质叠加到原版基础资源，随时恢复原版。
 - 主体、前置虚影和实际已确认结构分开显示；预演不会登记真实进度。
 - 门/床两格合并一次放置，双层半砖按两个物品统计；材料 CSV、完成/撤回、本机进度保存。
 - 项目 JSON、含当前图纸/资源/进度的离线 HTML，及 Ctrl+P / 打印施工图。
@@ -31,9 +31,9 @@
 
 ## 格式与实现边界
 
-- v0.2 支持 `.schem v3`。`.schem v2`、旧 `.schematic`、`.litematic` 尚未适配；可先用可信编辑器转换。图片/截图不能代替精确图纸。
+- v0.3 支持 `.schem v3`。`.schem v2`、旧 `.schematic`、`.litematic` 尚未适配；可先用可信编辑器转换。图片/截图不能代替精确图纸。
 - 创造模式优先。依赖提示是规则检查，不是玩家可达性、碰撞、红石或全部 Minecraft 物理过程模拟。复杂支撑请在游戏内确认。
-- 原版客户端/资源包缺失的模组资源、床/箱子等动态模型会保留方块 ID 并使用示意外形。资源包使用基础客户端模型时，需要提供完整客户端资源；首版一次导入一个资源档案。
+- 内置资源固定为 Java 1.20.1；其他版本新增或模组方块，以及床/箱子等内置动态模型，会保留方块 ID 并使用示意外形，数量显示在材质说明中。自定义包的缺失资源自动用内置原版补齐；一次选择一个自定义档案。
 - 项目保留方块实体和实体元数据供查阅，但不会重建物品容器内容、执行 NBT、命令或自动导入游戏世界。
 - 首版限制：64 MB 图纸、128 MB 解压数据、800 万空间格、25 万非空气目标格；复杂图纸在旧设备上可能较慢。
 - 本工具与既有城堡专用教学工程独立，当前进度格式不导入专用版的旧 JSON。原工程不受修改。
@@ -67,7 +67,9 @@ src/schematic.js       .schem v3 解压与解析
 src/nbt.js             有长度/深度边界的 NBT 读取器
 src/planner.js         方块操作、材料、分区与施工组
 src/worker.js          可取消的本地计算
-src/materials.js       自制材质与本机资源模型适配
+src/materials.js       原始模型适配与不支持方块的示意外形
+src/vanilla.js         内置原版资源与自定义包叠加
+assets/               压缩的原版方块资源、版本/哈希和独立权利声明
 src/viewer*.js         WebGL 与二维备用模型
 src/app.js             编辑、进度、打印与离线导出
 examples/             原创 .schem 示例
@@ -79,10 +81,12 @@ scripts/              构建与本地预览
 
 程序代码与原创示例采用 [MIT](LICENSE)。[第三方依赖说明](THIRD_PARTY_NOTICES.md)。
 
-仓库不附带 Minecraft 客户端内容、官方方块纹理、他人城堡图纸、抓包文件或个人进度。使用者导入的素材仍适用各自的授权；导出的含素材教学页不会因此获得本仓库的 MIT 授权。
+内置原版方块资源约 451 KiB（gzip），含 3,949 个方块渲染资源，来源与哈希见 [`assets/`](assets/NOTICE.md)。这些 Minecraft 素材的权利属于 Mojang / Microsoft，**不属于 MIT 授权**。仅应用程序代码与原创示例开源。其他导入/导出的素材同样保留原有授权。
+
+仓库不包含游戏可执行代码、声音、他人城堡图纸、抓包文件或个人进度。维护者可用 `node scripts/pack-vanilla.mjs <local-client.jar>` 从本机对应客户端重建资源库；普通使用者无需执行。
 
 这是非官方 Minecraft 工具，与 Mojang / Microsoft 没有关联或官方背书。Minecraft 名称、素材等权利属于其各自权利人。
 
 ## English
 
-Schem Teacher is a client-side, reusable building lesson editor for Sponge Schematic v3. Import a local schematic, edit construction regions, follow material-aware groups, track progress, and export a self-contained offline HTML lesson. Optional local Java resource archives provide original block models/textures. No schematic upload, account, backend or CDN is required. The initial release offers rule-based grouping with manual correction, not universal architectural recognition or a Minecraft physics simulator.
+Schem Teacher is a client-side, reusable building lesson editor for Sponge Schematic v3. Import a local schematic, edit construction regions, follow material-aware groups, track progress, and export a self-contained offline HTML lesson. Vanilla Java 1.20.1 block textures and JSON models are built in: no resource import or network connection is required. Optional custom resources override this base. Unsupported blocks and built-in entity models use clearly labelled illustrative geometry. The code and original examples are MIT; Minecraft assets retain Mojang / Microsoft's rights. No schematic upload, account, backend or CDN is required. The tool offers rule-based grouping with manual correction, not universal architectural recognition or a Minecraft physics simulator.

@@ -7,4 +7,6 @@
 
 Runtime dependency license text is embedded in the generated standalone HTML. The package manager installs the original licenses with each dependency.
 
-The MIT license for this repository covers its original source and authored examples. It does not relicense resources imported by a user, Minecraft assets, or third-party schematics. This repository does not distribute those resources.
+The MIT license for this repository covers its original source and authored examples. It does not relicense resources imported by a user, Minecraft assets, or third-party schematics.
+
+The bundled Minecraft: Java Edition 1.20.1 block-rendering resources are copyright Mojang Studios / Microsoft, excluded from MIT. See [asset provenance and notice](assets/NOTICE.md). This is an independent, unofficial project, not approved by or associated with Mojang or Microsoft. The standalone HTML embeds this notice alongside the dependency licenses.

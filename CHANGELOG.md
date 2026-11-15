@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-11-15
+
+- Bundle the original Java 1.20.1 block PNGs and JSON models as a 451 KiB compressed resource library. Schematics use vanilla resources automatically, including when fully offline.
+- Layer custom texture packs over the vanilla base, retaining inherited models and textures; add Restore vanilla without resetting progress or the camera.
+- Preserve the resource source/version in projects and exported lessons; retain the complete default library when opening another schematic in an exported page.
+- Keep explicit fallback labels for unsupported blocks and built-in entity models. Record provenance hashes and separate Minecraft asset rights from the MIT code license.
+- Prevent neighbouring atlas textures from bleeding into each other when zooming out.
+- Verify default texture pixels against the source PNG, partial-pack inheritance, offline exports, bilingual labels and library integrity.
+
 ## 0.2.0 — 2026-11-15
 
 - Add Chinese / English interface switching, stored preference and English entry links (`?lang=en`).
